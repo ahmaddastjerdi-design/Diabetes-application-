@@ -1,0 +1,43 @@
+# CI quality gate (Vol 9 §CI/CD, Vol 10 §gates).
+# Nothing merges unless the prototype typechecks + its simulation smoke-checks pass,
+# and the platform libraries build, typecheck, and pass their tests.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  prototype:
+    name: Prototype (root Expo app)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Engine smoke checks
+        run: npm run smoke
+
+  platform:
+    name: Platform monorepo
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Build libraries
+        run: npm run build:libs
+      - name: Typecheck workspaces
+        run: npm run typecheck
+      - name: Test (shared + services)
+        run: npm test
