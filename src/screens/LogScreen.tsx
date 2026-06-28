@@ -9,10 +9,11 @@ import {
   ActionCategory,
   ActionDef,
 } from "../data/actions";
-import { OrganKey, ORGANS } from "../engine/physiology";
+import { OrganKey } from "../engine/physiology";
 import { BadgeDef } from "../engine/gamification";
 import { Card } from "../components/ui";
 import { Pop } from "../components/anim";
+import { CausalChain } from "../components/CausalChain";
 import { useReward } from "../components/RewardLayer";
 import * as H from "../services/haptics";
 import { theme } from "../theme";
@@ -70,7 +71,7 @@ export function LogScreen() {
 
       {feedback && (
         <Pop trigger={popKey}>
-          <FeedbackCard fb={feedback} />
+          <FeedbackCard key={popKey} fb={feedback} />
         </Pop>
       )}
 
@@ -104,34 +105,12 @@ export function LogScreen() {
 function FeedbackCard({ fb }: { fb: Feedback }) {
   return (
     <Card style={styles.feedback}>
-      <Text style={styles.feedbackTitle}>
-        {fb.action.emoji} {fb.action.label}
-      </Text>
-      <Text style={styles.teach}>{fb.action.teach}</Text>
+      <Text style={styles.feedbackTitle}>{fb.action.teach}</Text>
 
-      <View style={styles.deltaRow}>
-        {(Object.keys(fb.organDelta) as OrganKey[]).map((k) => {
-          const d = fb.organDelta[k];
-          if (d === 0) return null;
-          return (
-            <Text
-              key={k}
-              style={[
-                styles.deltaChip,
-                {
-                  color: d > 0 ? theme.colors.good : theme.colors.bad,
-                  backgroundColor:
-                    (d > 0 ? theme.colors.good : theme.colors.bad) + "18",
-                },
-              ]}
-            >
-              {ORGANS[k].emoji} {d > 0 ? "+" : ""}
-              {d}
-            </Text>
-          );
-        })}
-        <Text style={styles.xpChip}>+{fb.xpGained} XP</Text>
-      </View>
+      {/* Animated choice → markers → organs flow */}
+      <CausalChain action={fb.action} organDelta={fb.organDelta} />
+
+      <Text style={styles.xpChip}>+{fb.xpGained} XP</Text>
     </Card>
   );
 }

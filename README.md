@@ -67,6 +67,8 @@ src/
   components/
     anim.tsx                CountUp, AnimatedBar, FadeIn, Pop primitives
     RewardLayer.tsx         App-wide XP toast + badge/level-up celebration
+    BodyDiagram.tsx         SVG body whose organs tint by health + heartbeat
+    CausalChain.tsx         Animated choice → markers → organs flow
     OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
   screens/                  Onboarding, Home, Log, Learn, Profile
   theme.ts                  Design tokens
@@ -76,6 +78,11 @@ src/
 
 The app leans on tactile + motion feedback to feel responsive and rewarding:
 
+- **Living body diagram** (`react-native-svg`) — the dashboard centerpiece: a
+  body silhouette whose heart and kidneys tint by their current health, with a
+  gentle pulsing heartbeat. The organ-impact concept made visual.
+- **Animated causal chain** — after you log a choice, a `choice → markers →
+  organs` flow fades in link by link, teaching the mechanism, not just the score.
 - **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
   logging, success/warning buzzes that mirror whether a choice helped or hurt.
 - **Animated everything** (RN `Animated`, no native config): counting numbers,

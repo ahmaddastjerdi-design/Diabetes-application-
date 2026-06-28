@@ -9,6 +9,7 @@ import { xpForLevel } from "../engine/gamification";
 import { OrganCard } from "../components/OrganCard";
 import { MarkerRow } from "../components/MarkerRow";
 import { ActivityCard } from "../components/ActivityCard";
+import { BodyDiagram } from "../components/BodyDiagram";
 import { Card } from "../components/ui";
 import { CountUp, AnimatedBar, FadeIn } from "../components/anim";
 import { getCondition } from "../data/profile";
@@ -76,13 +77,18 @@ export function HomeScreen() {
           </LinearGradient>
         </FadeIn>
 
+        {/* Living body — the centerpiece */}
+        <FadeIn delay={60}>
+          <BodyDiagram organs={body.organs} />
+        </FadeIn>
+
         {/* Real-data activity */}
-        <FadeIn delay={80}>
+        <FadeIn delay={100}>
           <ActivityCard />
         </FadeIn>
 
         {/* Organs */}
-        <Text style={styles.h2}>Your organs</Text>
+        <Text style={styles.h2}>Organ detail</Text>
         {(Object.keys(ORGANS) as OrganKey[]).map((k, i) => (
           <FadeIn key={k} delay={120 + i * 80}>
             <OrganCard organ={ORGANS[k]} score={body.organs[k]} />
