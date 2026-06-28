@@ -79,3 +79,12 @@ This is a **working vertical-slice prototype**: the simulation, gamification,
 lessons, and persistence all function end-to-end. It is a foundation to validate
 the concept, not a finished product. See [`DESIGN.md`](./DESIGN.md#roadmap) for
 the roadmap (clinician review, Health Connect integration, real data sync, etc.).
+
+## Full specification suite
+
+The complete, professional specification for evolving this prototype into a
+clinical-grade platform — patient app, clinician web panel, FHIR backend, medical
+device integration, AI Health Coach, and security/compliance — lives in
+[`docs/specification/`](./docs/specification/README.md). It is organised as ten
+volumes with stable, testable requirement IDs and is grounded throughout in the
+code in this repo.
