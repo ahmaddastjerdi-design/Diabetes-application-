@@ -18,6 +18,7 @@ import type { Observation } from "@diabetes-quest/shared";
 import { PgConsentRepo, PgEventRepo, PgAuditRepo } from "./infra/repositories.pg.js";
 import { pool } from "./infra/db.js";
 import { makeVerifier, AuthError } from "./infra/auth.js";
+import { securityHeaders } from "@diabetes-quest/security";
 
 const svc = new PatientDataService({
   consents: new PgConsentRepo(),
@@ -26,6 +27,13 @@ const svc = new PatientDataService({
 });
 
 const app = Fastify({ logger: true });
+
+// ---- Baseline security headers on every response (Vol 8 / OWASP) ----
+const SEC_HEADERS = securityHeaders();
+app.addHook("onSend", async (_req, reply, payload) => {
+  for (const [k, v] of Object.entries(SEC_HEADERS)) reply.header(k, v);
+  return payload;
+});
 
 // ---- Authentication ----
 const oidcConfigured = process.env.OIDC_ISSUER && process.env.OIDC_JWKS_URI && process.env.API_AUDIENCE;

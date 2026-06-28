@@ -30,6 +30,7 @@ platform/
   packages/
     shared/                    ✅ contracts: domain + FHIR (one source of truth)
     clinical/                  ✅ clinical engine: TIR/GMI/CV/AGP, decision support, risk → Vol 3
+    security/                  ✅ redaction, classification, field-encryption, DSAR → Vol 8
   apps/
     mobile/                    → Vol 2 · seeded by root prototype (migrates Phase 0–2)
     clinician-web/             ⬡ React panel (roster, AGP, decision support) → Vol 3

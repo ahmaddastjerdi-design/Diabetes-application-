@@ -9,10 +9,10 @@
     "services/*"
   ],
   "scripts": {
-    "build:libs": "npm run build -w @diabetes-quest/shared -w @diabetes-quest/clinical -w @diabetes-quest/backend -w @diabetes-quest/ai-coach -w @diabetes-quest/device-gateway",
+    "build:libs": "npm run build -w @diabetes-quest/shared -w @diabetes-quest/clinical -w @diabetes-quest/security -w @diabetes-quest/backend -w @diabetes-quest/ai-coach -w @diabetes-quest/device-gateway",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run build:libs && node --test packages/shared/test/*.test.mjs packages/clinical/test/*.test.mjs services/backend/test/*.test.mjs services/ai-coach/test/*.test.mjs services/device-gateway/test/*.test.mjs"
+    "test": "npm run build:libs && node --test packages/shared/test/*.test.mjs packages/clinical/test/*.test.mjs packages/security/test/*.test.mjs services/backend/test/*.test.mjs services/ai-coach/test/*.test.mjs services/device-gateway/test/*.test.mjs"
   },
   "license": "SEE LICENSE IN ../LICENSE"
 }

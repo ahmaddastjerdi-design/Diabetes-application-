@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@diabetes-quest/shared": "*",
+    "@diabetes-quest/security": "*",
     "fastify": "^5.0.0",
     "jose": "^5.9.0",
     "pg": "^8.13.0"

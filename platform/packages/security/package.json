@@ -1,0 +1,18 @@
+{
+  "name": "@diabetes-quest/security",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Security & compliance primitives: PHI log-redaction, classification, DSAR, pseudonymization, field-encryption envelope (Vol 8). Pure; crypto primitives injected.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  },
+  "license": "SEE LICENSE IN ../../../LICENSE"
+}
