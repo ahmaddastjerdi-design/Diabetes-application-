@@ -1,4 +1,17 @@
-# `services/backend` — Backend & FHIR Services (stub)
+# `services/backend` — Backend & FHIR Services (skeleton)
+
+## Implemented in this skeleton
+
+- `src/core/observations.ts` — `validateObservation`, `idempotencyKey` (dedup contract).
+- `src/core/progress.ts` — **server-side** XP/streak/badge derivation from an append-only
+  event log (`deriveProgress`, `xpForLevel`, `levelFromXp`); the client is no longer trusted.
+- `src/core/hash.ts` — dependency-free hash for idempotency / audit chain (upgrades to SHA-256).
+- `src/server.ts` — runnable Fastify entry (`/health`, `/v1/observations`, `/v1/events`, `/v1/progress`).
+- `db/schema.sql` — core tables (users, patients, consents, observations, event log, devices, audit).
+
+The core typechecks clean (strict TS). Auth, Postgres, and the FHIR facade are marked
+`TODO(Vol …)` in `server.ts` and built in Phase 1. Run: `npm install && npm run dev`.
+
 
 The platform's server: identity, profiles, observation ingest, simulation/gamification
 sync, FHIR facade, notifications, messaging, reporting, and audit.

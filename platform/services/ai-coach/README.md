@@ -1,4 +1,16 @@
-# `services/ai-coach` — AI Health Coach (stub)
+# `services/ai-coach` — AI Health Coach (skeleton)
+
+## Implemented in this skeleton
+
+- `src/core/guardrails.ts` — red-flag rules + tiered `classifyMessage`, the dosing hard
+  block (`isDosingRequest`, `DOSING_REFUSAL`). Pure & deterministic for the safety evals.
+- `src/core/provider.ts` — provider-agnostic `CoachModelProvider`, the guardrailed
+  `runCoach` orchestrator (guardrails win over the model), and a `StubCoachProvider`.
+- `src/server.ts` — runnable Fastify entry with a real **Claude** (`@anthropic-ai/sdk`) provider.
+
+The core typechecks clean (strict TS). Grounding-context fetch and care-team escalation
+are `TODO(Vol 6)` and built in Phase 4. Run: `npm install && ANTHROPIC_API_KEY=… npm run dev`.
+
 
 The server-side, **Claude-powered** educational coaching service.
 **Spec:** [Volume 6 — AI System](../../../docs/specification/06-ai-system.md) · security [Volume 8](../../../docs/specification/08-security-compliance.md).

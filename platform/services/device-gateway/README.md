@@ -1,4 +1,17 @@
-# `services/device-gateway` — Medical Device Ingest (stub)
+# `services/device-gateway` — Medical Device Ingest (skeleton)
+
+## Implemented in this skeleton
+
+- `src/core/mapping.ts` — `toObservation` maps a `RawMeasurement` → FHIR `Observation`
+  with shared `LOINC` codes, units normalisation (mmol/L→mg/dL, lb→kg), and a stable
+  `measurementIdentifier` for the dedup/idempotency contract.
+- `src/core/queue.ts` — `OfflineQueue`: idempotent enqueue, FIFO `due()`/`ack()`/`fail()`
+  with exponential backoff — the durable offline-sync contract (Vol 4/5).
+- `src/server.ts` — runnable Fastify entry (`/health`, `/v1/ingest`).
+
+The core typechecks clean (strict TS). Health Connect / BLE / vendor-cloud connectors and
+the backend-forwarding worker are `TODO(Vol 5)` and built in Phase 2. Run: `npm install && npm run dev`.
+
 
 Ingests measurements from medical devices and normalises them into FHIR `Observation`s.
 **Spec:** [Volume 5 — Medical Device Integration](../../../docs/specification/05-medical-devices.md) · sync [Volume 4](../../../docs/specification/04-backend.md).

@@ -5,11 +5,17 @@
 > project** than the educational prototype at the repo root — it is the thing the
 > ten spec volumes describe building.
 
-⚕️ **Status: scaffold.** This directory establishes the project *structure*, workspace
-wiring, and a substantive **shared contracts** package. The apps and services are
-**documented stubs** — each has a README pointing to its spec volume and its first
-build tasks (from [Volume 10](../docs/specification/10-claude-code-build-playbook.md)).
-No business logic is fabricated here; it is built phase by phase per the playbook.
+⚕️ **Status: buildable skeleton.** This directory establishes the project *structure*,
+workspace wiring, the **shared contracts** package, and a real, **typechecked domain
+core** for each backend service plus a runnable server entrypoint. The frontends have
+real config and an entry shell. What is deliberately *not* here: persistence, auth,
+UI screens, and network wiring — those are built phase by phase per
+[Volume 10](../docs/specification/10-claude-code-build-playbook.md). No clinical values
+or business rules are fabricated beyond what the specs define.
+
+**Verified:** `packages/shared` and all three service cores
+(`services/backend`, `services/ai-coach`, `services/device-gateway`) typecheck clean
+under strict-mode TypeScript 6.
 
 The existing root Expo app (`../App.tsx`, `../src/…`) is **Phase 0** and the seed for
 [`apps/mobile`](./apps/mobile/README.md).
@@ -22,15 +28,18 @@ The existing root Expo app (`../App.tsx`, `../src/…`) is **Phase 0** and the s
 platform/
   package.json                 npm workspaces root
   packages/
-    shared/                    ✅ real: domain + FHIR contracts (one source of truth)
+    shared/                    ✅ contracts: domain + FHIR (one source of truth)
   apps/
-    mobile/                    stub → Vol 2 (Android PRD) · seeded by root prototype
-    clinician-web/             stub → Vol 3 (Doctor Panel)
+    mobile/                    → Vol 2 · seeded by root prototype (migrates Phase 0–2)
+    clinician-web/             ⬡ Vite+React shell + config → Vol 3 (Doctor Panel)
   services/
-    backend/                   stub → Vol 4 (Backend, FHIR, sync, audit)
-    ai-coach/                  stub → Vol 6 (AI Health Coach, guardrails)
-    device-gateway/            stub → Vol 5 (Health Connect / BLE ingest)
+    backend/                   ⬡ typed core + Fastify entry + schema.sql → Vol 4
+    ai-coach/                  ⬡ guardrail core + Claude entry → Vol 6
+    device-gateway/            ⬡ mapping + offline-queue core + entry → Vol 5
 ```
+
+✅ = real, typechecked, no external runtime deps · ⬡ = real domain core typechecks
+clean; server/UI layer is idiomatic code that runs after `npm install`.
 
 ## How this maps to the specs
 

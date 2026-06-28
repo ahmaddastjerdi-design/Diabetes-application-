@@ -1,0 +1,13 @@
+{
+  "name": "@diabetes-quest/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Diabetes Quest patient app (Vol 2). Seeded by the root Expo prototype; migrates here in Phase 0–2.",
+  "scripts": {
+    "note": "echo 'The runnable app currently lives at the repo root (../../../App.tsx). See README.'"
+  },
+  "dependencies": {
+    "@diabetes-quest/shared": "*"
+  },
+  "license": "SEE LICENSE IN ../../../LICENSE"
+}

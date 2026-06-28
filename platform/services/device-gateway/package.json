@@ -1,0 +1,25 @@
+{
+  "name": "@diabetes-quest/device-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Diabetes Quest device ingest: Health Connect / BLE / vendor cloud -> FHIR Observations (Vol 5).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@diabetes-quest/shared": "*",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "~6.0.3",
+    "@types/node": "^22.0.0"
+  },
+  "license": "SEE LICENSE IN ../../../LICENSE"
+}
