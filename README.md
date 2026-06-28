@@ -155,6 +155,13 @@ organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
 reconciliation (including "never downgrade an earned tier"), goal reset on a new
 day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).
 
+### Device QA
+
+`tsc`, Jest, and the bundle can't verify animations, SVG layout, touch behavior,
+haptics, or native permission flows — a real device can. [`docs/DEVICE_QA.md`](./docs/DEVICE_QA.md)
+is a systematic per-screen checklist (with a regression-hotspots section and a
+report template) for an `npx expo run:android` pass.
+
 ### Continuous integration
 
 `.github/workflows/ci.yml` runs on every push and pull request: `npm ci`,
