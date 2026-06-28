@@ -5,10 +5,19 @@
  */
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { MARKERS, MarkerKey, ORGANS, OrganKey } from "../engine/physiology";
+import { MarkerKey, ORGANS, OrganKey } from "../engine/physiology";
 import { ActionDef } from "../data/actions";
 import { FadeIn } from "./anim";
 import { theme } from "../theme";
+
+/** Short, distinct labels — full names ("Blood glucose"/"Blood pressure") both
+ *  start with "Blood", so the first word alone is ambiguous. */
+const SHORT_LABEL: Record<MarkerKey, string> = {
+  glucose: "Glucose",
+  systolic: "BP",
+  hydration: "Hydration",
+  ldl: "LDL",
+};
 
 /** Lower is better for most markers; hydration is the exception. */
 function markerIsGood(key: MarkerKey, delta: number): boolean {
@@ -59,7 +68,7 @@ export function CausalChain({
           <FadeIn key={k} delay={d()}>
             <View style={[styles.chip, { backgroundColor: color + "18" }]}>
               <Text style={[styles.chipText, { color }]}>
-                {MARKERS[k].label.split(" ")[0]} {delta > 0 ? "↑" : "↓"}
+                {SHORT_LABEL[k]} {delta > 0 ? "↑" : "↓"}
               </Text>
             </View>
           </FadeIn>
