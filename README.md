@@ -1,5 +1,7 @@
 # Diabetes Quest 🩺
 
+[![CI](https://github.com/ahmaddastjerdi-design/Diabetes-application-/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmaddastjerdi-design/Diabetes-application-/actions/workflows/ci.yml)
+
 A React Native (Expo) **Android** app that teaches patients — through gamified,
 hands-on play — how their everyday choices around **diet, exercise, and
 medication** ripple through their body and affect organs like the **heart** and
@@ -147,6 +149,12 @@ profile helpers — is covered by [Jest](https://jestjs.io/) (`jest-expo` preset
 organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
 reconciliation (including "never downgrade an earned tier"), goal reset on a new
 day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request: `npm ci`,
+`npm run typecheck`, `npm test`, and a Metro Android bundle (`expo export`) — the
+same checks validated locally, so a green badge means all three pass.
 
 You need [Expo](https://docs.expo.dev/) tooling and an Android emulator or the
 Expo Go app on a physical device. Tech: Expo SDK 56, React Native 0.85, React 19,
