@@ -8,6 +8,9 @@ on:
   push:
     branches: ["claude/apk-build-setup"]
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     name: Build APK
@@ -42,10 +45,25 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Upload the APK
+      - name: Upload the APK (build artifact)
         uses: actions/upload-artifact@v4
         with:
           name: diabetes-quest-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Name the APK with the version
+        run: cp android/app/build/outputs/apk/release/app-release.apk diabetes-quest.apk
+
+      - name: Publish a downloadable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: Diabetes Quest — test APK
+          body: |
+            Installable Android test build (debug-signed; JS bundled).
+            Download **diabetes-quest.apk** below, copy it to an Android phone, and tap to install
+            (allow "install from unknown sources" if prompted).
+          files: diabetes-quest.apk
+          make_latest: "true"
