@@ -106,8 +106,12 @@ The app leans on tactile + motion feedback to feel responsive and rewarding:
   lessons, days played, and organ health, with progress toward the next tier and
   a celebration when one is reached.
 - **Medication reminders** (`expo-notifications`) — opt-in daily local reminder
-  that names the patient's meds. Local-only; scheduling is most reliable on an
-  Android development build (it's guarded and degrades gracefully elsewhere).
+  that names the patient's meds, and **tapping it deep-links straight to the Log
+  screen** (one tap from reminder to action). Local-only; scheduling is most
+  reliable on an Android development build (guarded, degrades gracefully).
+- **Accessibility** — screen-reader labels on the emoji-only action tiles, the
+  SVG body diagram (read as "Heart 82 of 100, Thriving…"), organ cards, and
+  buttons; plus reduce-motion support throughout.
 - **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
   logging, success/warning buzzes that mirror whether a choice helped or hurt.
 - **Animated everything** (RN `Animated`, no native config): counting numbers,

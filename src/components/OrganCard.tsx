@@ -22,7 +22,11 @@ export function OrganCard({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => pressed && onPress ? { opacity: 0.85 } : null}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={`${organ.label}: ${Math.round(score)} of 100, ${
+        status.label
+      }${onPress ? ". Tap for trend and tips." : ""}`}
+      style={({ pressed }) => (pressed && onPress ? { opacity: 0.85 } : null)}
     >
     <Card style={styles.card}>
       <View style={styles.row}>

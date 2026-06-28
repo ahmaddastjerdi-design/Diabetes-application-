@@ -64,11 +64,26 @@ export function BodyDiagram({
   const haloR = beat.interpolate({ inputRange: [0, 1], outputRange: [13, 24] });
   const haloO = beat.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] });
 
+  const a11yLabel = `Your body. Heart ${Math.round(
+    organs.heart
+  )} of 100, ${organStatus(organs.heart).label}. Kidneys ${Math.round(
+    organs.kidney
+  )} of 100, ${organStatus(organs.kidney).label}.`;
+
   return (
     <Card style={styles.card}>
       <Text style={styles.title}>Your body</Text>
-      <View style={styles.svgWrap}>
-        <Svg width="100%" height={240} viewBox="0 0 200 250">
+      <View
+        style={styles.svgWrap}
+        accessible
+        accessibilityLabel={a11yLabel}
+      >
+        <Svg
+          width="100%"
+          height={240}
+          viewBox="0 0 200 250"
+          accessibilityRole="image"
+        >
           {/* Silhouette */}
           <Circle cx={100} cy={30} r={22} fill={SILHOUETTE} />
           <Path
@@ -116,6 +131,10 @@ export function BodyDiagram({
               key={k}
               onPress={() => onSelectOrgan?.(k)}
               disabled={!onSelectOrgan}
+              accessibilityRole="button"
+              accessibilityLabel={`${ORGANS[k].label}: ${Math.round(
+                organs[k]
+              )} of 100, ${s.label}. Tap for details.`}
               style={({ pressed }) => [
                 styles.legendItem,
                 pressed && onSelectOrgan ? { opacity: 0.6 } : null,

@@ -66,6 +66,8 @@ export async function scheduleMedicationReminder(
       content: {
         title: "💊 Medication reminder",
         body,
+        // Deep-link target: tapping the reminder opens the Log screen.
+        data: { screen: "Log" },
         ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
       },
       trigger: {
@@ -87,5 +89,45 @@ export async function cancelMedicationReminder(): Promise<void> {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch {
     // ignore
+  }
+}
+
+function screenFromResponse(
+  r: Notifications.NotificationResponse | null
+): string | null {
+  const screen = (r?.notification.request.content.data as { screen?: unknown })
+    ?.screen;
+  return typeof screen === "string" ? screen : null;
+}
+
+/**
+ * Subscribe to reminder taps. The handler receives the target screen name from
+ * the notification's data payload. Returns an unsubscribe handle.
+ */
+export function onReminderTapped(handler: (screen: string) => void): {
+  remove: () => void;
+} {
+  if (Platform.OS === "web") return { remove: () => {} };
+  try {
+    return Notifications.addNotificationResponseReceivedListener((r) => {
+      const screen = screenFromResponse(r);
+      if (screen) handler(screen);
+    });
+  } catch {
+    return { remove: () => {} };
+  }
+}
+
+/**
+ * If the app was cold-started by tapping a reminder, the screen to deep-link to.
+ */
+export async function getInitialReminderScreen(): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    return screenFromResponse(
+      await Notifications.getLastNotificationResponseAsync()
+    );
+  } catch {
+    return null;
   }
 }

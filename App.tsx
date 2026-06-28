@@ -9,11 +9,18 @@ import React, { useEffect } from "react";
 import { Text, View, ActivityIndicator, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  createNavigationContainerRef,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import { tapLight } from "./src/services/haptics";
-import { configureNotifications } from "./src/services/notifications";
+import {
+  configureNotifications,
+  onReminderTapped,
+  getInitialReminderScreen,
+} from "./src/services/notifications";
 
 import { GameProvider, useGame } from "./src/state/GameContext";
 import { RewardProvider } from "./src/components/RewardLayer";
@@ -92,16 +99,35 @@ function Tabs() {
   );
 }
 
+const navigationRef = createNavigationContainerRef();
+
+/** Navigate to a tab if the navigator is mounted (tabs exist post-onboarding). */
+function deepLink(screen: string) {
+  if (navigationRef.isReady()) {
+    try {
+      navigationRef.navigate(screen as never);
+    } catch {
+      // route not available (e.g. still onboarding) — ignore
+    }
+  }
+}
+
 export default function App() {
   useEffect(() => {
     configureNotifications();
+    // Tapping a medication reminder deep-links to the Log screen.
+    const sub = onReminderTapped(deepLink);
+    getInitialReminderScreen().then((screen) => {
+      if (screen) setTimeout(() => deepLink(screen), 300); // let tabs mount
+    });
+    return () => sub.remove();
   }, []);
 
   return (
     <SafeAreaProvider>
       <GameProvider>
         <RewardProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <StatusBar style="dark" />
             <Root />
           </NavigationContainer>

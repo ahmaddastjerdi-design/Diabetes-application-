@@ -85,6 +85,9 @@ export function LogScreen() {
               <Pressable
                 key={a.id}
                 onPress={() => onLog(a)}
+                accessibilityRole="button"
+                accessibilityLabel={`Log: ${a.label}`}
+                accessibilityHint="Records this choice and shows its effect on your body"
                 style={({ pressed }) => [
                   styles.tile,
                   pressed && { transform: [{ scale: 0.97 }], opacity: 0.9 },
