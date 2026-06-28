@@ -68,14 +68,15 @@ export function OrganDetailSheet({
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <View style={styles.container}>
+        {/* Backdrop is a sibling *behind* the sheet, so tapping the sheet (or
+            scrolling inside it) never closes — only tapping the dimmed area. */}
+        <Pressable style={styles.backdrop} onPress={onClose} />
         <Animated.View
           style={[
             styles.sheet,
             { paddingBottom: insets.bottom + theme.space(5), transform: [{ translateY }] },
           ]}
-          // Swallow taps so pressing inside doesn't close.
-          onStartShouldSetResponder={() => true}
         >
           <View style={styles.handle} />
 
@@ -129,16 +130,20 @@ export function OrganDetailSheet({
             )}
           </ScrollView>
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "flex-end" },
   backdrop: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(15,23,42,0.5)",
-    justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: theme.colors.bg,

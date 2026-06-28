@@ -134,9 +134,19 @@ built in; older versions install it from the Play Store).
 ```bash
 npm install
 npm run typecheck     # tsc --noEmit
-npm run smoke         # validates the simulation behaves correctly
+npm test              # Jest unit tests (engine + data logic)
+npm run smoke         # quick scripted simulation sanity check
 npm run android       # run on an Android device/emulator via Expo
 ```
+
+### Tests
+
+Pure logic — the simulation engine, gamification, achievements, daily goals, and
+profile helpers — is covered by [Jest](https://jestjs.io/) (`jest-expo` preset).
+44 tests across 5 suites assert the things that actually matter for correctness:
+organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
+reconciliation (including "never downgrade an earned tier"), goal reset on a new
+day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).
 
 You need [Expo](https://docs.expo.dev/) tooling and an Android emulator or the
 Expo Go app on a physical device. Tech: Expo SDK 56, React Native 0.85, React 19,
