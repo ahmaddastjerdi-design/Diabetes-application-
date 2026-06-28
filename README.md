@@ -143,8 +143,45 @@ npm install
 npm run typecheck     # tsc --noEmit
 npm test              # Jest unit tests (engine + data logic)
 npm run smoke         # quick scripted simulation sanity check
-npm run android       # run on an Android device/emulator via Expo
 ```
+
+## Run on your Android phone
+
+Pick a path. You run these on a computer (after `git clone` + `npm install`);
+the app ends up on your phone.
+
+### A) Quick look — Expo Go (no build, ~2 min)
+
+Most of the app, minus Health Connect step sync and reliable reminder scheduling.
+
+1. Install **Expo Go** from the Play Store on your phone.
+2. On your computer: `npx expo start`
+3. Scan the QR code with Expo Go (phone and computer on the **same Wi-Fi**).
+
+### B) Full app — installable APK via EAS Build (cloud, no Android Studio)
+
+Includes Health Connect + working notifications. Builds in the cloud, so you
+don't need the Android SDK locally.
+
+```bash
+npm install -g eas-cli
+eas login                              # free Expo account
+eas build -p android --profile preview # builds an APK in the cloud
+```
+
+When it finishes, open the build URL (or the emailed link) on your phone and
+install the APK (you'll need to allow "install from unknown sources"). Then
+install **Health Connect** from the Play Store if you want step sync.
+
+### C) Full app — local build (needs Android Studio + USB device/emulator)
+
+```bash
+npx expo run:android
+```
+
+> Health Connect step sync and reliable medication-reminder scheduling require
+> path **B** or **C** (a dev/standalone build) — they don't work in Expo Go.
+> Everything else works in all three.
 
 ### Tests
 
