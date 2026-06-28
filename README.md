@@ -34,12 +34,19 @@ and a *forgiving* streak — see `DESIGN.md` for why punishing streaks backfire)
 
 ## App structure
 
+First run shows an **onboarding/consent** flow (condition type, glucose units, the
+educational-only disclaimer). After that:
+
 | Tab | Screen | Purpose |
 |-----|--------|---------|
 | 🩺 Home | `HomeScreen` | Dashboard: level, streak, organ health, live markers |
 | ➕ Log | `LogScreen` | The core mechanic — log a choice, see the ripple |
 | 📚 Learn | `LearnScreen` | Bite-size lesson quests + a check-question |
-| 🏅 Profile | `ProfileScreen` | Badges, level summary, reset |
+| 🤖 Coach | `CoachScreen` | AI health coach — educational chat with on-device safety guardrails |
+| 🏅 Profile | `ProfileScreen` | Badges, level summary, link to **Settings** |
+
+**Settings** (`SettingsScreen`) covers glucose units (mg/dL ↔ mmol/L), condition,
+reminders, and privacy (export / delete). Units flow through `MarkerRow` everywhere.
 
 ## Code map
 

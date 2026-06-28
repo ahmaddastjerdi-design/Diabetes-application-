@@ -34,22 +34,50 @@ import {
   registerActivity,
 } from "../engine/gamification";
 import { ActionDef } from "../data/actions";
+import { GlucoseUnit } from "../lib/units";
 
 const STORAGE_KEY = "diabetes-quest/v1";
+
+export type ConditionType = "type1" | "type2" | "prediabetes" | "gestational" | "other";
+
+/** Patient profile captured at onboarding (PRD Vol 2: onboarding & personalization). */
+export interface Profile {
+  onboarded: boolean;
+  consentAccepted: boolean;
+  conditionType: ConditionType;
+  glucoseUnit: GlucoseUnit;
+  remindersEnabled: boolean;
+}
+
+export function initialProfile(): Profile {
+  return {
+    onboarded: false,
+    consentAccepted: false,
+    conditionType: "type2",
+    glucoseUnit: "mg/dL",
+    remindersEnabled: true,
+  };
+}
 
 interface PersistedState {
   body: BodyState;
   progress: ProgressState;
   completedLessons: string[];
+  profile?: Profile;
 }
 
 export interface GameContextValue {
   body: BodyState;
   progress: ProgressState;
   completedLessons: string[];
+  profile: Profile;
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
+  /** Finish onboarding with the chosen profile settings. */
+  completeOnboarding: (settings: Omit<Profile, "onboarded">) => void;
+  /** Update one or more profile fields (Settings). */
+  updateProfile: (partial: Partial<Profile>) => void;
   /** Log an action: applies effects, awards XP, advances the day. */
   logAction: (action: ActionDef) => {
     organDelta: Record<OrganKey, number>;
@@ -69,6 +97,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [body, setBody] = useState<BodyState>(initialBodyState);
   const [progress, setProgress] = useState<ProgressState>(initialProgress);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [profile, setProfile] = useState<Profile>(initialProfile);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -81,6 +110,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.body) setBody(p.body);
           if (p.progress) setProgress(p.progress);
           if (p.completedLessons) setCompletedLessons(p.completedLessons);
+          if (p.profile) setProfile({ ...initialProfile(), ...p.profile });
         }
       } catch {
         // start fresh on any corruption
@@ -93,9 +123,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons };
+    const payload: PersistedState = { body, progress, completedLessons, profile };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, ready]);
+  }, [body, progress, completedLessons, profile, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -179,10 +209,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     [completedLessons, progress, body, inRangeCount, badgeCtx]
   );
 
+  const completeOnboarding = useCallback<GameContextValue["completeOnboarding"]>((settings) => {
+    setProfile({ ...settings, onboarded: true });
+  }, []);
+
+  const updateProfile = useCallback<GameContextValue["updateProfile"]>((partial) => {
+    setProfile((prev) => ({ ...prev, ...partial }));
+  }, []);
+
   const reset = useCallback(() => {
     setBody(initialBodyState());
     setProgress(initialProgress());
     setCompletedLessons([]);
+    // Onboarding/profile is intentionally kept so a reset doesn't re-onboard the user.
   }, []);
 
   const level = useMemo(() => levelFromXp(progress.xp), [progress.xp]);
@@ -191,9 +230,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     body,
     progress,
     completedLessons,
+    profile,
     ready,
     level,
     inRangeCount,
+    completeOnboarding,
+    updateProfile,
     logAction,
     completeLesson,
     reset,

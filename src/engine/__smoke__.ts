@@ -8,8 +8,11 @@ import {
   applyActionEffects,
   advanceDay,
   BodyState,
+  MARKERS,
 } from "./physiology";
 import { getAction } from "../data/actions";
+import { formatMarker, mgdlToMmol } from "../lib/units";
+import { localCoachReply } from "../lib/coach";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -56,6 +59,18 @@ expect(
   "organ health never exceeds 100",
   healthy.organs.heart <= 100 && healthy.organs.kidney <= 100
 );
+
+// Glucose unit conversion + formatting (PRD units).
+expect("glucose 140 mg/dL ≈ 7.8 mmol/L", Math.abs(mgdlToMmol(140) - 7.77) < 0.05);
+const mmol = formatMarker(MARKERS.glucose, 140, "mmol/L");
+expect("formatMarker converts glucose to mmol/L", mmol.unit === "mmol/L" && mmol.value === "7.8");
+const mgdl = formatMarker(MARKERS.glucose, 140, "mg/dL");
+expect("formatMarker keeps mg/dL by default", mgdl.unit === "mg/dL" && mgdl.value === "140");
+
+// AI coach safety guardrails (must hold on-device, offline).
+expect("coach escalates a red-flag emergency", localCoachReply("I have chest pain").tier === "tier3");
+expect("coach hard-blocks dosing questions", localCoachReply("how much insulin should I take").guardrailed === true);
+expect("coach answers an educational question normally", localCoachReply("how does a walk help?").tier === "none");
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

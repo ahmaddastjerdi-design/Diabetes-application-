@@ -1,12 +1,14 @@
 /** ProfileScreen.tsx — badges, level summary, and a reset for testing. */
 import React from "react";
 import { ScrollView, View, Text, StyleSheet, Alert } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useGame } from "../state/GameContext";
 import { BADGES } from "../engine/gamification";
 import { Card, Button, ProgressBar } from "../components/ui";
 import { theme } from "../theme";
 
 export function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const { progress, level, completedLessons, reset } = useGame();
   const owned = new Set(progress.badges);
 
@@ -51,7 +53,8 @@ export function ProfileScreen() {
         })}
       </View>
 
-      <View style={{ marginTop: theme.space(4) }}>
+      <View style={{ marginTop: theme.space(4), gap: theme.space(2.5) }}>
+        <Button label="⚙️  Settings" onPress={() => navigation.navigate("Settings")} />
         <Button label="Reset progress" variant="ghost" onPress={confirmReset} />
       </View>
     </ScrollView>
