@@ -8,19 +8,26 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:full": "tsc -p tsconfig.full.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:full": "tsc --noEmit -p tsconfig.full.json",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "start": "node dist-full/server.js",
+    "migrate": "node dist-full/infra/migrate.js",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:integration": "npm run build:full && node --test test-integration/*.test.mjs"
   },
   "dependencies": {
     "@diabetes-quest/shared": "*",
-    "fastify": "^5.0.0"
+    "fastify": "^5.0.0",
+    "jose": "^5.9.0",
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "tsx": "^4.0.0",
     "typescript": "~6.0.3",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0"
   },
   "license": "SEE LICENSE IN ../../../LICENSE"
 }
