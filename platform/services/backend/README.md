@@ -49,11 +49,15 @@ CI runs the integration suite against a real Postgres 16 service container
 `ObservationRepo` + `EscalationRepo` have Postgres adapters (migration `0002_escalations.sql`)
 and in-memory adapters; the flows are covered by unit tests and the Postgres integration suite.
 
+**PHI at rest:** when `ENCRYPTION_KEYS` is configured, `PgObservationRepo` encrypts the
+FHIR payload with AES-256-GCM (`@diabetes-quest/security`) before it touches disk and
+decrypts transparently on read. The Postgres integration suite proves the raw row is
+ciphertext (no plaintext glucose on disk) while reads return the original value.
+
 ### Still TODO (later phases)
 
-FHIR facade, Redis, notifications/messaging/reporting, field encryption applied to PHI
-columns + SHA-256 audit in storage (primitives ready in `@diabetes-quest/security`),
-TLS-to-DB, latency/availability NFRs (Vol 4).
+FHIR facade, Redis, notifications/messaging/reporting, extend field encryption to the
+remaining PHI columns + SHA-256 audit in storage, TLS-to-DB, latency/availability NFRs (Vol 4).
 
 
 The platform's server: identity, profiles, observation ingest, simulation/gamification

@@ -18,8 +18,15 @@ import type {
   StoredEscalation,
 } from "../core/index.js";
 import type { Observation } from "@diabetes-quest/shared";
+import { encryptField, decryptField, type Aead, type KeyRing, type EncryptedField } from "@diabetes-quest/security";
 import { chainHash } from "../core/index.js";
 import { pool } from "./db.js";
+
+/** Optional field-encryption config for PHI at rest (Vol 8). When absent, stored plain. */
+export interface FieldEncryption {
+  ring: KeyRing;
+  aead: Aead;
+}
 
 export class PgConsentRepo implements ConsentRepo {
   async forPatient(patientId: string): Promise<Consent[]> {
@@ -121,6 +128,24 @@ export class PgAuditRepo implements AuditRepo {
 }
 
 export class PgObservationRepo implements ObservationRepo {
+  /** Pass `enc` to encrypt the FHIR payload at rest (Vol 8); omit for plaintext (dev). */
+  constructor(private readonly enc?: FieldEncryption) {}
+
+  /** What goes into the JSONB column: an EncryptedField envelope, or the FHIR object. */
+  private encode(fhir: Observation): unknown {
+    if (!this.enc) return fhir;
+    return encryptField(this.enc.ring, this.enc.aead, JSON.stringify(fhir));
+  }
+
+  /** Reverse of encode; auto-detects ciphertext by the AEAD envelope's `alg` field. */
+  private decode(value: unknown): Observation {
+    if (value && typeof value === "object" && (value as { alg?: string }).alg === "AES-256-GCM") {
+      if (!this.enc) throw new Error("encrypted observation but no key configured");
+      return JSON.parse(decryptField(this.enc.ring, this.enc.aead, value as EncryptedField)) as Observation;
+    }
+    return value as Observation;
+  }
+
   async seenKeys(patientId: string): Promise<Set<string>> {
     const { rows } = await pool.query("SELECT idempotency_key FROM observations WHERE patient_id = $1", [patientId]);
     return new Set(rows.map((r) => r.idempotency_key as string));
@@ -133,7 +158,7 @@ export class PgObservationRepo implements ObservationRepo {
       for (const r of rows) {
         await client.query(
           "INSERT INTO observations (patient_id, idempotency_key, fhir, effective_at) VALUES ($1,$2,$3,to_timestamp($4/1000.0)) ON CONFLICT (idempotency_key) DO NOTHING",
-          [r.patientId, r.idempotencyKey, JSON.stringify(r.fhir), r.effectiveAtMs]
+          [r.patientId, r.idempotencyKey, JSON.stringify(this.encode(r.fhir)), r.effectiveAtMs]
         );
       }
       await client.query("COMMIT");
@@ -152,7 +177,7 @@ export class PgObservationRepo implements ObservationRepo {
     return rows.map((r) => ({
       patientId: r.patient_id,
       idempotencyKey: r.idempotency_key,
-      fhir: r.fhir as Observation,
+      fhir: this.decode(r.fhir),
       effectiveAtMs: Number(r.at_ms),
     }));
   }

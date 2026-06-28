@@ -5,6 +5,7 @@
  */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import pkg from "pg";
 
 const { Pool } = pkg;
@@ -14,6 +15,7 @@ const DB = process.env.DATABASE_URL;
 // discovered even when skipped.
 const { PatientDataService, AccessDeniedError } = DB ? await import("../dist-full/index.js") : {};
 const repos = DB ? await import("../dist-full/infra/repositories.pg.js") : {};
+const crypto = DB ? await import("../dist-full/infra/crypto.js") : {};
 
 const run = DB ? test : test.skip;
 let pool;
@@ -91,4 +93,36 @@ run("observations persist + coach-context derives from real Postgres data", asyn
   const ctx = await svc.getCoachContext(patient, "p2", now);
   assert.equal(ctx.recentMarkers[0].value, 260); // latest reading
   assert.equal(ctx.recentMarkers[0].status, "out-of-range");
+});
+
+run("PHI observations are encrypted at rest (AES-256-GCM) yet read back transparently", async () => {
+  const aead = crypto.nodeAead({ k1: randomBytes(32) });
+  const enc = { ring: { activeKeyId: "k1", keyIds: ["k1"] }, aead };
+  const svc = new PatientDataService({
+    consents: new repos.PgConsentRepo(),
+    events: new repos.PgEventRepo(),
+    audit: new repos.PgAuditRepo(),
+    observations: new repos.PgObservationRepo(enc), // <-- encryption enabled
+    escalations: new repos.PgEscalationRepo(),
+  });
+  const now = Date.parse("2026-06-01T12:00:00Z");
+  const fhir = {
+    resourceType: "Observation",
+    status: "final",
+    code: { coding: [{ system: "http://loinc.org", code: "2339-0", display: "Glucose" }] },
+    subject: { reference: "Patient/p3" },
+    effectiveDateTime: "2026-06-01T08:00:00Z",
+    valueQuantity: { value: 137, unit: "mg/dL" },
+  };
+  await svc.ingestObservation("p3", fhir, now);
+
+  // read back through the repo -> transparently decrypted
+  const back = await svc.listObservations({ id: "p3", role: "patient" }, "p3", now);
+  assert.equal(back[0].valueQuantity.value, 137);
+
+  // the RAW row in Postgres is ciphertext, not the plaintext value (encryption at rest)
+  const { rows } = await pool.query("SELECT fhir FROM observations WHERE patient_id = 'p3'");
+  assert.equal(rows[0].fhir.alg, "AES-256-GCM");
+  assert.ok(typeof rows[0].fhir.ciphertext === "string");
+  assert.equal(JSON.stringify(rows[0].fhir).includes("137"), false, "plaintext glucose must not be on disk");
 });

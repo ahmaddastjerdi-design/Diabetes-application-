@@ -17,13 +17,17 @@ import type { Observation } from "@diabetes-quest/shared";
 import { PgConsentRepo, PgEventRepo, PgAuditRepo, PgObservationRepo, PgEscalationRepo } from "./infra/repositories.pg.js";
 import { pool } from "./infra/db.js";
 import { makeVerifier, AuthError } from "./infra/auth.js";
+import { nodeAead, keyRingFromEnv } from "./infra/crypto.js";
 import { securityHeaders } from "@diabetes-quest/security";
+
+// Encrypt PHI (observations) at rest when keys are configured (Vol 8).
+const fieldEncryption = process.env.ENCRYPTION_KEYS ? { ring: keyRingFromEnv(), aead: nodeAead() } : undefined;
 
 const svc = new PatientDataService({
   consents: new PgConsentRepo(),
   events: new PgEventRepo(),
   audit: new PgAuditRepo(),
-  observations: new PgObservationRepo(),
+  observations: new PgObservationRepo(fieldEncryption),
   escalations: new PgEscalationRepo(),
 });
 
