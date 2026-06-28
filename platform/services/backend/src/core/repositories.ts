@@ -6,6 +6,7 @@
  * in src/infra/ (which needs `pg`). This keeps the core verifiable without a database
  * and makes the access-control flow testable end-to-end.
  */
+import type { Observation } from "@diabetes-quest/shared";
 import type { Consent } from "./auth/access.js";
 import type { DomainEvent } from "./progress.js";
 import type { AuditEntry, AuditRecord } from "./audit/chain.js";
@@ -75,5 +76,61 @@ export class InMemoryAuditRepo implements AuditRepo {
   }
   async all(): Promise<AuditRecord[]> {
     return [...this.log];
+  }
+}
+
+// ---- Observations (the patient timeline; read by the panel + AI coach) ----
+
+export interface StoredObservation {
+  patientId: string;
+  idempotencyKey: string;
+  fhir: Observation;
+  effectiveAtMs: number;
+}
+
+export interface ObservationRepo {
+  seenKeys(patientId: string): Promise<Set<string>>;
+  append(rows: StoredObservation[]): Promise<void>;
+  forPatient(patientId: string): Promise<StoredObservation[]>;
+}
+
+export class InMemoryObservationRepo implements ObservationRepo {
+  private rows: StoredObservation[] = [];
+  async seenKeys(patientId: string): Promise<Set<string>> {
+    return new Set(this.rows.filter((r) => r.patientId === patientId).map((r) => r.idempotencyKey));
+  }
+  async append(rows: StoredObservation[]): Promise<void> {
+    this.rows.push(...rows);
+  }
+  async forPatient(patientId: string): Promise<StoredObservation[]> {
+    return this.rows
+      .filter((r) => r.patientId === patientId)
+      .sort((a, b) => a.effectiveAtMs - b.effectiveAtMs);
+  }
+}
+
+// ---- Escalations (recorded when the AI coach escalates to the care team) ----
+
+export interface StoredEscalation {
+  patientId: string;
+  tier: string;
+  audience: string;
+  notifyCareTeam: boolean;
+  instruction: string;
+  atMs: number;
+}
+
+export interface EscalationRepo {
+  record(e: StoredEscalation): Promise<void>;
+  forPatient(patientId: string): Promise<StoredEscalation[]>;
+}
+
+export class InMemoryEscalationRepo implements EscalationRepo {
+  private rows: StoredEscalation[] = [];
+  async record(e: StoredEscalation): Promise<void> {
+    this.rows.push(e);
+  }
+  async forPatient(patientId: string): Promise<StoredEscalation[]> {
+    return this.rows.filter((r) => r.patientId === patientId);
   }
 }

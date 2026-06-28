@@ -28,7 +28,7 @@ export async function getPatientProgress(cfg: ApiConfig, patientId: string): Pro
   return res.json();
 }
 
-/** TODO(Vol 4): backend GET /v1/patients/:id/observations once the timeline API lands. */
+/** Backend GET /v1/patients/:id/observations (consent-gated). */
 export async function getGlucoseReadings(cfg: ApiConfig, patientId: string): Promise<GlucoseReading[]> {
   const res = await fetch(`${cfg.baseUrl}/v1/patients/${patientId}/observations?code=glucose`, {
     headers: authHeaders(cfg),

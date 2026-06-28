@@ -39,10 +39,21 @@ npm run dev -w @diabetes-quest/backend
 CI runs the integration suite against a real Postgres 16 service container
 (`.github/workflows/ci.yml` → `backend-integration`).
 
+### Service-integration endpoints (connect the platform end-to-end)
+
+- `POST /v1/observations` — first-party device ingest (persisted + audited; from the device-gateway).
+- `GET  /v1/patients/:id/observations` — consent-gated timeline (clinician panel + coach).
+- `GET  /v1/patients/:id/coach-context` — derived grounding context for the AI coach.
+- `POST /v1/escalations` — record a care-team escalation from the AI coach.
+
+`ObservationRepo` + `EscalationRepo` have Postgres adapters (migration `0002_escalations.sql`)
+and in-memory adapters; the flows are covered by unit tests and the Postgres integration suite.
+
 ### Still TODO (later phases)
 
-FHIR facade & ObservationRepo persistence, Redis, notifications/messaging/reporting,
-TLS-to-DB and at-rest encryption (Vol 8), latency/availability NFRs (Vol 4).
+FHIR facade, Redis, notifications/messaging/reporting, field encryption applied to PHI
+columns + SHA-256 audit in storage (primitives ready in `@diabetes-quest/security`),
+TLS-to-DB, latency/availability NFRs (Vol 4).
 
 
 The platform's server: identity, profiles, observation ingest, simulation/gamification

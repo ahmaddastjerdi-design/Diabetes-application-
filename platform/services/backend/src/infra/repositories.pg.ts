@@ -12,7 +12,12 @@ import type {
   DomainEvent,
   AuditEntry,
   AuditRecord,
+  ObservationRepo,
+  StoredObservation,
+  EscalationRepo,
+  StoredEscalation,
 } from "../core/index.js";
+import type { Observation } from "@diabetes-quest/shared";
 import { chainHash } from "../core/index.js";
 import { pool } from "./db.js";
 
@@ -111,6 +116,67 @@ export class PgAuditRepo implements AuditRepo {
       occurredAt: Number(r.occurred_at),
       prevHash: r.prev_hash,
       hash: r.hash,
+    }));
+  }
+}
+
+export class PgObservationRepo implements ObservationRepo {
+  async seenKeys(patientId: string): Promise<Set<string>> {
+    const { rows } = await pool.query("SELECT idempotency_key FROM observations WHERE patient_id = $1", [patientId]);
+    return new Set(rows.map((r) => r.idempotency_key as string));
+  }
+  async append(rows: StoredObservation[]): Promise<void> {
+    if (rows.length === 0) return;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (const r of rows) {
+        await client.query(
+          "INSERT INTO observations (patient_id, idempotency_key, fhir, effective_at) VALUES ($1,$2,$3,to_timestamp($4/1000.0)) ON CONFLICT (idempotency_key) DO NOTHING",
+          [r.patientId, r.idempotencyKey, JSON.stringify(r.fhir), r.effectiveAtMs]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+  async forPatient(patientId: string): Promise<StoredObservation[]> {
+    const { rows } = await pool.query(
+      "SELECT patient_id, idempotency_key, fhir, extract(epoch from effective_at) * 1000 AS at_ms FROM observations WHERE patient_id = $1 ORDER BY effective_at ASC",
+      [patientId]
+    );
+    return rows.map((r) => ({
+      patientId: r.patient_id,
+      idempotencyKey: r.idempotency_key,
+      fhir: r.fhir as Observation,
+      effectiveAtMs: Number(r.at_ms),
+    }));
+  }
+}
+
+export class PgEscalationRepo implements EscalationRepo {
+  async record(e: StoredEscalation): Promise<void> {
+    await pool.query(
+      "INSERT INTO escalations (patient_id, tier, audience, notify_care_team, instruction, at_ms) VALUES ($1,$2,$3,$4,$5,$6)",
+      [e.patientId, e.tier, e.audience, e.notifyCareTeam, e.instruction, e.atMs]
+    );
+  }
+  async forPatient(patientId: string): Promise<StoredEscalation[]> {
+    const { rows } = await pool.query(
+      "SELECT patient_id, tier, audience, notify_care_team, instruction, at_ms FROM escalations WHERE patient_id = $1 ORDER BY seq ASC",
+      [patientId]
+    );
+    return rows.map((r) => ({
+      patientId: r.patient_id,
+      tier: r.tier,
+      audience: r.audience,
+      notifyCareTeam: r.notify_care_team,
+      instruction: r.instruction,
+      atMs: Number(r.at_ms),
     }));
   }
 }

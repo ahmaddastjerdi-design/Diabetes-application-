@@ -7,7 +7,6 @@ import Fastify from "fastify";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import {
   validateObservation,
-  idempotencyKey,
   PatientDataService,
   AccessDeniedError,
   type Actor,
@@ -15,7 +14,7 @@ import {
   type DomainEvent,
 } from "./core/index.js";
 import type { Observation } from "@diabetes-quest/shared";
-import { PgConsentRepo, PgEventRepo, PgAuditRepo } from "./infra/repositories.pg.js";
+import { PgConsentRepo, PgEventRepo, PgAuditRepo, PgObservationRepo, PgEscalationRepo } from "./infra/repositories.pg.js";
 import { pool } from "./infra/db.js";
 import { makeVerifier, AuthError } from "./infra/auth.js";
 import { securityHeaders } from "@diabetes-quest/security";
@@ -24,6 +23,8 @@ const svc = new PatientDataService({
   consents: new PgConsentRepo(),
   events: new PgEventRepo(),
   audit: new PgAuditRepo(),
+  observations: new PgObservationRepo(),
+  escalations: new PgEscalationRepo(),
 });
 
 const app = Fastify({ logger: true });
@@ -80,11 +81,45 @@ function onError(err: unknown, reply: FastifyReply) {
 // ---- Routes ----
 app.get("/health", async () => ({ status: "ok" }));
 
+// First-party ingest from the device-gateway (service token). Persists + audits.
 app.post("/v1/observations", async (req, reply) => {
   const obs = req.body as Observation;
   const { ok, errors } = validateObservation(obs);
   if (!ok) return reply.code(422).send({ errors });
-  return reply.code(201).send({ id: idempotencyKey(obs) }); // TODO(Vol4): persist via ObservationRepo
+  const patientId = obs.subject.reference.replace(/^Patient\//, "");
+  const result = await svc.ingestObservation(patientId, obs, Date.now());
+  return reply.code(201).send(result);
+});
+
+// Consent-gated read of a patient's observation timeline (clinician panel / coach).
+app.get("/v1/patients/:id/observations", async (req, reply) => {
+  const patientId = (req.params as { id: string }).id;
+  try {
+    return reply.send(await svc.listObservations(getActor(req), patientId, Date.now()));
+  } catch (err) {
+    return onError(err, reply);
+  }
+});
+
+// Grounding context for the AI coach (consent-gated + audited).
+app.get("/v1/patients/:id/coach-context", async (req, reply) => {
+  const patientId = (req.params as { id: string }).id;
+  try {
+    return reply.send(await svc.getCoachContext(getActor(req), patientId, Date.now()));
+  } catch (err) {
+    return onError(err, reply);
+  }
+});
+
+// Care-team escalation recorded by the AI coach.
+app.post("/v1/escalations", async (req, reply) => {
+  const body = req.body as { userId: string; tier: string; audience: string; notifyCareTeam: boolean; instruction: string };
+  try {
+    const result = await svc.recordEscalation(getActor(req), body.userId, body, Date.now());
+    return reply.send(result);
+  } catch (err) {
+    return onError(err, reply);
+  }
 });
 
 app.post("/v1/patients/:id/events", async (req, reply) => {

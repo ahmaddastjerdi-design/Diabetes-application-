@@ -21,7 +21,7 @@ let pool;
 before(async () => {
   if (!DB) return;
   pool = new Pool({ connectionString: DB });
-  await pool.query("TRUNCATE consents, domain_events, audit_log RESTART IDENTITY");
+  await pool.query("TRUNCATE consents, domain_events, audit_log, observations, escalations RESTART IDENTITY");
 });
 
 after(async () => {
@@ -59,4 +59,36 @@ run("idempotent sync + consent-gated read persist correctly in Postgres", async 
   const log = await new repos.PgAuditRepo().all();
   assert.ok(log.length >= 4);
   assert.ok(log.some((r) => r.action === "read:progress:deny"));
+});
+
+run("observations persist + coach-context derives from real Postgres data", async () => {
+  const svc = new PatientDataService({
+    consents: new repos.PgConsentRepo(),
+    events: new repos.PgEventRepo(),
+    audit: new repos.PgAuditRepo(),
+    observations: new repos.PgObservationRepo(),
+    escalations: new repos.PgEscalationRepo(),
+  });
+  const now = Date.parse("2026-06-01T12:00:00Z");
+  const obs = (value, atIso) => ({
+    resourceType: "Observation",
+    status: "final",
+    code: { coding: [{ system: "http://loinc.org", code: "2339-0", display: "Glucose" }] },
+    subject: { reference: "Patient/p2" },
+    effectiveDateTime: atIso,
+    valueQuantity: { value, unit: "mg/dL" },
+  });
+
+  // first-party ingest is idempotent
+  assert.equal((await svc.ingestObservation("p2", obs(120, "2026-06-01T08:00:00Z"), now)).deduped, false);
+  assert.equal((await svc.ingestObservation("p2", obs(120, "2026-06-01T08:00:00Z"), now)).deduped, true);
+  await svc.ingestObservation("p2", obs(260, "2026-06-01T10:00:00Z"), now);
+
+  const patient = { id: "p2", role: "patient" };
+  const timeline = await svc.listObservations(patient, "p2", now);
+  assert.equal(timeline.length, 2);
+
+  const ctx = await svc.getCoachContext(patient, "p2", now);
+  assert.equal(ctx.recentMarkers[0].value, 260); // latest reading
+  assert.equal(ctx.recentMarkers[0].status, "out-of-range");
 });
