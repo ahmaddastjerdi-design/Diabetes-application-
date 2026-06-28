@@ -56,6 +56,7 @@ src/
     physiology.ts           Organ-impact simulation (markers → organs)
     gamification.ts         XP, levels, badges, forgiving streak (SDT-based)
     achievements.ts         Tiered (bronze/silver/gold) achievements
+    gameLogic.ts            Pure game-loop reducers (logAction/completeLesson)
     __smoke__.ts            Runtime sanity checks for the engine
   data/
     actions.ts              Loggable diet/exercise/drug actions (+ steps→action)
@@ -145,7 +146,7 @@ npm run android       # run on an Android device/emulator via Expo
 
 Pure logic — the simulation engine, gamification, achievements, daily goals, and
 profile helpers — is covered by [Jest](https://jestjs.io/) (`jest-expo` preset).
-44 tests across 5 suites assert the things that actually matter for correctness:
+53 tests across 6 suites assert the things that actually matter for correctness:
 organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
 reconciliation (including "never downgrade an earned tier"), goal reset on a new
 day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).

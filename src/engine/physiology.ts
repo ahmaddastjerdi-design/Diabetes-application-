@@ -30,9 +30,10 @@ export interface MarkerDef {
   /**
    * The untreated daily starting point. Each new day the marker resets here and
    * the day's logged actions move it from there, so end-of-day values reflect
-   * the choices just made (no unbounded accumulation across days). Baselines sit
-   * slightly OUTSIDE the healthy band, so doing nothing drifts you down and good
-   * daily choices are what bring you into range.
+   * the choices just made (no unbounded accumulation across days). Glucose
+   * starts OUT of range (the diabetes lever to manage); the others start just
+   * inside, so a single good choice can bring everything into range, while bad
+   * choices (e.g. salt → blood pressure) push individual markers back out.
    */
   baseline: number;
 }
@@ -52,7 +53,8 @@ export const MARKERS: Record<MarkerKey, MarkerDef> = {
     unit: "mmHg",
     healthy: [100, 130],
     clamp: [85, 200],
-    baseline: 135,
+    // Just inside range at baseline; bad choices (salt) push it out.
+    baseline: 125,
   },
   hydration: {
     key: "hydration",
@@ -60,7 +62,7 @@ export const MARKERS: Record<MarkerKey, MarkerDef> = {
     unit: "%",
     healthy: [60, 100],
     clamp: [10, 100],
-    baseline: 55,
+    baseline: 65,
   },
   ldl: {
     key: "ldl",
@@ -68,7 +70,7 @@ export const MARKERS: Record<MarkerKey, MarkerDef> = {
     unit: "mg/dL",
     healthy: [40, 100],
     clamp: [40, 240],
-    baseline: 108,
+    baseline: 95,
   },
 };
 

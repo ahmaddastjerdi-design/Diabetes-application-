@@ -68,15 +68,17 @@ differentiator and the reason the simulation engine is the centerpiece.
 A deliberately simplified, **directionally faithful** model — it teaches the
 *direction* of relationships, not clinical values.
 
-**Markers** (each with a healthy band and a daily baseline that sits slightly
-out of range, so doing nothing drifts you down and good choices bring you in):
+**Markers** (each with a healthy band and a daily baseline). Glucose starts out
+of range — the diabetes lever to manage — while the others start just inside, so
+a single good choice can bring everything into range and bad choices (e.g. salt
+→ blood pressure) push individual markers back out:
 
 | Marker | Healthy band | Baseline |
 |--------|--------------|----------|
-| Blood glucose | 80–140 mg/dL | 150 |
-| Blood pressure (systolic) | 100–130 mmHg | 135 |
-| Hydration | 60–100 % | 55 |
-| LDL cholesterol | 40–100 mg/dL | 108 |
+| Blood glucose | 80–140 mg/dL | 150 (out) |
+| Blood pressure (systolic) | 100–130 mmHg | 125 |
+| Hydration | 60–100 % | 65 |
+| LDL cholesterol | 40–100 mg/dL | 95 |
 
 **Organs** are damaged in proportion to how far their sensitive markers sit
 *outside* their band, weighted by sensitivity:
@@ -145,7 +147,7 @@ Near-term, in rough priority order:
    a slow long-term score.
 6. **Social/relatedness** — opt-in challenges or care-team sharing.
 7. **Accessibility** — large-text and screen-reader passes.
-8. **UI / integration tests** — the pure logic is now covered by Jest (44 tests,
+8. **UI / integration tests** — the pure logic is now covered by Jest (53 tests,
    `npm test`); next is component/interaction testing with a device pass.
 
 ## 5. Safety & scope

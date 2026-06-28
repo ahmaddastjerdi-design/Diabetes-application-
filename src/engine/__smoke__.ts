@@ -36,7 +36,7 @@ function expect(name: string, cond: boolean) {
 // A patient who walks, takes meds, drinks water and eats well should see
 // organ health climb above the starting 70.
 const healthy = simulate(
-  ["walk", "metformin", "water", "balanced-meal", "bp-med", "statin"],
+  ["walk", "metformin", "water", "balanced-meal", "statin"],
   20
 );
 expect("healthy routine improves the heart", healthy.organs.heart > 70);

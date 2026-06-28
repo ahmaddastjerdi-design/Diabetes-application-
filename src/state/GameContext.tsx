@@ -17,37 +17,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   BodyState,
   MarkerKey,
-  OrganKey,
   ORGANS,
-  advanceDay,
-  applyActionEffects,
-  baselineMarkers,
   deviation,
   initialBodyState,
 } from "../engine/physiology";
 import {
   ProgressState,
-  XP,
-  BadgeDef,
   initialProgress,
   levelFromXp,
-  reconcileBadges,
-  registerActivity,
 } from "../engine/gamification";
 import {
-  reconcileAchievements,
-  TIER_META,
-  Tier,
-  AchievementDef,
-} from "../engine/achievements";
+  GameSlice,
+  LogResult,
+  LessonResult,
+  reduceLogAction,
+  reduceCompleteLesson,
+} from "../engine/gameLogic";
 import { ActionDef, stepsToAction } from "../data/actions";
 import { UserProfile, defaultProfile } from "../data/profile";
-import {
-  DailyGoalsState,
-  completeGoal,
-  freshGoals,
-  todayKey,
-} from "../data/goals";
+import { DailyGoalsState, freshGoals, todayKey } from "../data/goals";
 
 const STORAGE_KEY = "diabetes-quest/v1";
 
@@ -61,20 +49,7 @@ interface PersistedState {
   dailyGoals?: DailyGoalsState;
 }
 
-export interface LogResult {
-  organDelta: Record<OrganKey, number>;
-  newBadges: BadgeDef[];
-  xpGained: number;
-  leveledUp: boolean;
-  newLevel: number;
-}
-
-export interface LessonResult {
-  newBadges: BadgeDef[];
-  xpGained: number;
-  leveledUp: boolean;
-  newLevel: number;
-}
+export type { LogResult, LessonResult };
 
 export interface GameContextValue {
   body: BodyState;
@@ -100,24 +75,6 @@ export interface GameContextValue {
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
-
-/** Present a newly-earned achievement tier as a celebratory "badge". */
-function achievementToBadge({
-  def,
-  tier,
-}: {
-  def: AchievementDef;
-  tier: Tier;
-}): BadgeDef {
-  const m = TIER_META[tier];
-  return {
-    id: `${def.id}-${tier}`,
-    label: `${m.label}: ${def.title}`,
-    emoji: m.emoji,
-    description: `${def.title} — ${m.label} tier reached!`,
-    earned: () => true,
-  };
-}
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [body, setBody] = useState<BodyState>(initialBodyState);
@@ -206,86 +163,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     [body.markers]
   );
 
-  const badgeCtx = useCallback(
-    (b: BodyState, pr: ProgressState, lessons: number, inRange: number) => ({
-      progress: pr,
-      organs: b.organs,
-      lessonsCompleted: lessons,
-      inRangeMarkers: inRange,
-    }),
-    []
-  );
+  const slice = (): GameSlice => ({
+    body,
+    progress,
+    completedLessons,
+    dailyGoals,
+  });
 
   const logAction = useCallback<GameContextValue["logAction"]>(
     (action) => {
-      // 1. New day: start from baseline, apply this choice, score the day.
-      const fresh: BodyState = { ...body, markers: baselineMarkers() };
-      const afterEffects = applyActionEffects(fresh, action.effects);
-      const { next, organDelta } = advanceDay(afterEffects);
-
-      // 2. XP: base for logging + bonus if every marker ended in range.
-      const markerKeys = Object.keys(next.markers) as MarkerKey[];
-      const inRange = markerKeys.filter(
-        (k) => deviation(k, next.markers[k]) === 0
-      ).length;
-      const allInRange = inRange === markerKeys.length;
-      let xpGained = XP.logAction + (allInRange ? XP.dailyAllMarkersInRange : 0);
-
-      // 3. Daily goals: movement, and "everything in range".
-      const today = todayKey();
-      let goals = dailyGoals;
-      const goalIds: string[] = [];
-      if (action.category === "exercise") goalIds.push("move");
-      if (allInRange) goalIds.push("balance");
-      for (const id of goalIds) {
-        const r = completeGoal(goals, id, today);
-        goals = r.next;
-        xpGained += r.bonusXp;
-      }
-      if (goals !== dailyGoals) setDailyGoals(goals);
-
-      // 4. Streak + XP into progress.
-      const activity = registerActivity(progress, next.day);
-      let nextProgress: ProgressState = {
-        ...activity.progress,
-        xp: activity.progress.xp + xpGained,
-      };
-
-      // 5. Badges + tiered achievements.
-      const reconciled = reconcileBadges(
-        nextProgress,
-        badgeCtx(next, nextProgress, completedLessons.length, inRange)
-      );
-      const ach = reconcileAchievements(reconciled.progress.achievements ?? {}, {
-        streak: reconciled.progress.streak,
-        lessons: completedLessons.length,
-        daysLogged: next.day,
-        heart: next.organs.heart,
-        kidney: next.organs.kidney,
-      });
-      const finalProgress: ProgressState = {
-        ...reconciled.progress,
-        achievements: ach.earned,
-      };
-
-      setBody(next);
-      setProgress(finalProgress);
-
-      const prevLevel = levelFromXp(progress.xp).level;
-      const newLevel = levelFromXp(finalProgress.xp).level;
-
-      return {
-        organDelta,
-        newBadges: [
-          ...reconciled.newlyEarned,
-          ...ach.newly.map(achievementToBadge),
-        ],
-        xpGained,
-        leveledUp: newLevel > prevLevel,
-        newLevel,
-      };
+      const { next, result } = reduceLogAction(slice(), action, todayKey());
+      setBody(next.body);
+      setProgress(next.progress);
+      if (next.dailyGoals !== dailyGoals) setDailyGoals(next.dailyGoals);
+      return result;
     },
-    [body, progress, completedLessons.length, badgeCtx, dailyGoals]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [body, progress, completedLessons, dailyGoals]
   );
 
   const stepsSyncedToday = lastStepSyncDay === body.day;
@@ -312,61 +206,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const completeLesson = useCallback<GameContextValue["completeLesson"]>(
     (lessonId, passedQuiz) => {
-      const already = completedLessons.includes(lessonId);
-      const lessons = already
-        ? completedLessons
-        : [...completedLessons, lessonId];
-
-      let xpGained = already
-        ? 0
-        : XP.completeLesson + (passedQuiz ? XP.passQuiz : 0);
-
-      // Daily goal: finish a lesson (only the first lesson finished today).
-      let goals = dailyGoals;
-      if (!already) {
-        const r = completeGoal(goals, "learn", todayKey());
-        goals = r.next;
-        xpGained += r.bonusXp;
-        if (goals !== dailyGoals) setDailyGoals(goals);
-      }
-
-      let nextProgress: ProgressState = {
-        ...progress,
-        xp: progress.xp + xpGained,
-      };
-      const reconciled = reconcileBadges(
-        nextProgress,
-        badgeCtx(body, nextProgress, lessons.length, inRangeCount)
+      const { next, result } = reduceCompleteLesson(
+        slice(),
+        lessonId,
+        passedQuiz,
+        todayKey()
       );
-      const ach = reconcileAchievements(reconciled.progress.achievements ?? {}, {
-        streak: reconciled.progress.streak,
-        lessons: lessons.length,
-        daysLogged: body.day,
-        heart: body.organs.heart,
-        kidney: body.organs.kidney,
-      });
-      const finalProgress: ProgressState = {
-        ...reconciled.progress,
-        achievements: ach.earned,
-      };
-
-      if (!already) setCompletedLessons(lessons);
-      setProgress(finalProgress);
-
-      const prevLevel = levelFromXp(progress.xp).level;
-      const newLevel = levelFromXp(finalProgress.xp).level;
-
-      return {
-        newBadges: [
-          ...reconciled.newlyEarned,
-          ...ach.newly.map(achievementToBadge),
-        ],
-        xpGained,
-        leveledUp: newLevel > prevLevel,
-        newLevel,
-      };
+      setCompletedLessons(next.completedLessons);
+      setProgress(next.progress);
+      if (next.dailyGoals !== dailyGoals) setDailyGoals(next.dailyGoals);
+      return result;
     },
-    [completedLessons, progress, body, inRangeCount, badgeCtx, dailyGoals]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [completedLessons, progress, body, dailyGoals]
   );
 
   const reset = useCallback(() => {
