@@ -1,6 +1,7 @@
 /** LogScreen.tsx — the core mechanic: log a daily action and see the impact. */
 import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../state/GameContext";
 import {
   ACTIONS_BY_CATEGORY,
@@ -11,6 +12,9 @@ import {
 import { OrganKey, ORGANS } from "../engine/physiology";
 import { BadgeDef } from "../engine/gamification";
 import { Card } from "../components/ui";
+import { Pop } from "../components/anim";
+import { useReward } from "../components/RewardLayer";
+import * as H from "../services/haptics";
 import { theme } from "../theme";
 
 interface Feedback {
@@ -22,11 +26,25 @@ interface Feedback {
 
 export function LogScreen() {
   const { logAction, profile } = useGame();
+  const { celebrate } = useReward();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [popKey, setPopKey] = useState(0);
 
   const onLog = (action: ActionDef) => {
     const res = logAction(action);
     setFeedback({ action, ...res });
+    setPopKey((k) => k + 1);
+
+    // Tactile feedback reflects whether the choice helped or hurt.
+    const net = (Object.values(res.organDelta) as number[]).reduce(
+      (a, b) => a + b,
+      0
+    );
+    if (net >= 0) H.notifySuccess();
+    else H.notifyWarning();
+
+    // XP toast + badge / level-up celebration.
+    celebrate(res);
   };
 
   // Personalize the medication tiles to the patient's own meds. "Missed my
@@ -40,17 +58,21 @@ export function LogScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       <Text style={styles.h1}>Log a choice</Text>
       <Text style={styles.subtitle}>
         Tap something you did. Watch how it ripples through your body.
       </Text>
 
-      {feedback && <FeedbackCard fb={feedback} />}
+      {feedback && (
+        <Pop trigger={popKey}>
+          <FeedbackCard fb={feedback} />
+        </Pop>
+      )}
 
       {(Object.keys(ACTIONS_BY_CATEGORY) as ActionCategory[]).map((cat) => (
         <View key={cat} style={{ gap: theme.space(2) }}>
@@ -74,7 +96,8 @@ export function LogScreen() {
           </View>
         </View>
       ))}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -109,12 +132,6 @@ function FeedbackCard({ fb }: { fb: Feedback }) {
         })}
         <Text style={styles.xpChip}>+{fb.xpGained} XP</Text>
       </View>
-
-      {fb.newBadges.map((b) => (
-        <Text key={b.id} style={styles.badgeUnlock}>
-          {b.emoji} Badge unlocked: {b.label}!
-        </Text>
-      ))}
     </Card>
   );
 }

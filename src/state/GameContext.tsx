@@ -51,6 +51,15 @@ export interface LogResult {
   organDelta: Record<OrganKey, number>;
   newBadges: BadgeDef[];
   xpGained: number;
+  leveledUp: boolean;
+  newLevel: number;
+}
+
+export interface LessonResult {
+  newBadges: BadgeDef[];
+  xpGained: number;
+  leveledUp: boolean;
+  newLevel: number;
 }
 
 export interface GameContextValue {
@@ -67,10 +76,7 @@ export interface GameContextValue {
   logAction: (action: ActionDef) => LogResult;
   /** Apply real Health Connect steps to the current day (once per sim-day). */
   logSteps: (steps: number) => LogResult | null;
-  completeLesson: (lessonId: string, passedQuiz: boolean) => {
-    newBadges: BadgeDef[];
-    xpGained: number;
-  };
+  completeLesson: (lessonId: string, passedQuiz: boolean) => LessonResult;
   /** Persist the onboarding profile (also flips `onboarded` true). */
   saveProfile: (profile: UserProfile) => void;
   updateProfile: (partial: Partial<UserProfile>) => void;
@@ -174,7 +180,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setBody(next);
       setProgress(reconciled.progress);
 
-      return { organDelta, newBadges: reconciled.newlyEarned, xpGained };
+      const prevLevel = levelFromXp(progress.xp).level;
+      const newLevel = levelFromXp(reconciled.progress.xp).level;
+
+      return {
+        organDelta,
+        newBadges: reconciled.newlyEarned,
+        xpGained,
+        leveledUp: newLevel > prevLevel,
+        newLevel,
+      };
     },
     [body, progress, completedLessons.length, badgeCtx]
   );
@@ -224,7 +239,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (!already) setCompletedLessons(lessons);
       setProgress(reconciled.progress);
 
-      return { newBadges: reconciled.newlyEarned, xpGained };
+      const prevLevel = levelFromXp(progress.xp).level;
+      const newLevel = levelFromXp(reconciled.progress.xp).level;
+
+      return {
+        newBadges: reconciled.newlyEarned,
+        xpGained,
+        leveledUp: newLevel > prevLevel,
+        newLevel,
+      };
     },
     [completedLessons, progress, body, inRangeCount, badgeCtx]
   );

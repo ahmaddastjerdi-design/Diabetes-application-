@@ -9,6 +9,7 @@ import {
   Pressable,
 } from "react-native";
 import { theme } from "../theme";
+import { AnimatedBar } from "./anim";
 
 export function Card({
   children,
@@ -29,17 +30,14 @@ export function ProgressBar({
   color?: string;
   height?: number;
 }) {
+  // Delegates to AnimatedBar so every progress bar in the app animates.
   return (
-    <View style={[styles.track, { height, borderRadius: height }]}>
-      <View
-        style={{
-          width: `${Math.max(0, Math.min(1, value)) * 100}%`,
-          backgroundColor: color,
-          height,
-          borderRadius: height,
-        }}
-      />
-    </View>
+    <AnimatedBar
+      value={value}
+      color={color}
+      height={height}
+      trackColor={theme.colors.border}
+    />
   );
 }
 
@@ -95,11 +93,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     ...theme.shadow,
-  },
-  track: {
-    backgroundColor: theme.colors.border,
-    width: "100%",
-    overflow: "hidden",
   },
   pill: {
     alignSelf: "flex-start",

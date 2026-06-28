@@ -1,9 +1,13 @@
 /** LearnScreen.tsx — gamified micro-lessons with a closing check-question. */
 import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../state/GameContext";
 import { LESSONS, LessonDef } from "../data/lessons";
 import { Card, Button, ProgressBar } from "../components/ui";
+import { FadeIn } from "../components/anim";
+import { useReward } from "../components/RewardLayer";
+import * as H from "../services/haptics";
 import { theme } from "../theme";
 
 export function LearnScreen() {
@@ -15,40 +19,48 @@ export function LearnScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.h1}>Learn</Text>
-      <Text style={styles.subtitle}>
-        Short quests. Each one you finish earns XP and unlocks understanding.
-      </Text>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.h1}>Learn</Text>
+        <Text style={styles.subtitle}>
+          Short quests. Each one you finish earns XP and unlocks understanding.
+        </Text>
 
-      <Text style={styles.progressNote}>
-        {completedLessons.length}/{LESSONS.length} lessons complete
-      </Text>
-      <ProgressBar
-        value={completedLessons.length / LESSONS.length}
-        color={theme.colors.primary}
-      />
+        <Text style={styles.progressNote}>
+          {completedLessons.length}/{LESSONS.length} lessons complete
+        </Text>
+        <ProgressBar
+          value={completedLessons.length / LESSONS.length}
+          color={theme.colors.primary}
+        />
 
-      {LESSONS.map((l) => {
-        const done = completedLessons.includes(l.id);
-        return (
-          <Pressable key={l.id} onPress={() => setActive(l)}>
-            <Card style={styles.lessonRow}>
-              <Text style={styles.lessonEmoji}>{l.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.lessonTitle}>{l.title}</Text>
-                <Text style={styles.lessonSummary}>{l.summary}</Text>
-              </View>
-              <Text style={styles.check}>{done ? "✅" : "▶️"}</Text>
-            </Card>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+        {LESSONS.map((l, i) => {
+          const done = completedLessons.includes(l.id);
+          return (
+            <FadeIn key={l.id} delay={i * 70}>
+              <Pressable
+                onPress={() => {
+                  H.tapLight();
+                  setActive(l);
+                }}
+              >
+                <Card style={styles.lessonRow}>
+                  <Text style={styles.lessonEmoji}>{l.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.lessonTitle}>{l.title}</Text>
+                    <Text style={styles.lessonSummary}>{l.summary}</Text>
+                  </View>
+                  <Text style={styles.check}>{done ? "✅" : "▶️"}</Text>
+                </Card>
+              </Pressable>
+            </FadeIn>
+          );
+        })}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -60,6 +72,7 @@ function LessonFlow({
   onExit: () => void;
 }) {
   const { completeLesson } = useGame();
+  const { celebrate } = useReward();
   // step: 0..cards-1 = cards, cards = quiz, cards+1 = result
   const [step, setStep] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -75,20 +88,28 @@ function LessonFlow({
     if (picked !== null) return;
     setPicked(i);
     const passed = i === lesson.quiz.answerIndex;
+    if (passed) H.notifySuccess();
+    else H.notifyWarning();
     const res = completeLesson(lesson.id, passed);
     setResult({
       xpGained: res.xpGained,
       badges: res.newBadges.map((b) => `${b.emoji} ${b.label}`),
     });
+    celebrate(res);
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Pressable onPress={onExit}>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+      <Pressable
+        onPress={() => {
+          H.tapLight();
+          onExit();
+        }}
+      >
         <Text style={styles.back}>‹ All lessons</Text>
       </Pressable>
       <Text style={styles.h1}>
@@ -145,7 +166,8 @@ function LessonFlow({
           )}
         </Card>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

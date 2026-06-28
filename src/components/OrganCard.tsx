@@ -3,6 +3,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { OrganDef, organStatus } from "../engine/physiology";
 import { Card, ProgressBar, Pill } from "./ui";
+import { CountUp } from "./anim";
 import { theme } from "../theme";
 
 export function OrganCard({
@@ -35,9 +36,7 @@ export function OrganCard({
             )}
           </View>
           <View style={styles.scoreRow}>
-            <Text style={[styles.score, { color: status.color }]}>
-              {Math.round(score)}
-            </Text>
+            <CountUp value={score} style={[styles.score, { color: status.color }]} />
             <Pill label={status.label} color={status.color} />
           </View>
         </View>

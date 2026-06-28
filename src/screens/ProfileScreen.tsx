@@ -1,6 +1,7 @@
 /** ProfileScreen.tsx — personalization, badges, level summary, and reset. */
 import React from "react";
 import { ScrollView, View, Text, StyleSheet, Alert, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../state/GameContext";
 import { BADGES } from "../engine/gamification";
 import {
@@ -10,6 +11,8 @@ import {
   ConditionId,
 } from "../data/profile";
 import { Card, Button, ProgressBar } from "../components/ui";
+import { FadeIn } from "../components/anim";
+import * as H from "../services/haptics";
 import { theme } from "../theme";
 
 export function ProfileScreen() {
@@ -17,14 +20,27 @@ export function ProfileScreen() {
     useGame();
   const owned = new Set(progress.badges);
 
-  const toggleMed = (id: string) =>
+  const toggleMed = (id: string) => {
+    H.tapLight();
     updateProfile({
       medications: profile.medications.includes(id)
         ? profile.medications.filter((m) => m !== id)
         : [...profile.medications, id],
     });
+  };
 
-  const confirmReset = () =>
+  const pickCondition = (id: ConditionId) => {
+    H.tapLight();
+    updateProfile({ condition: id });
+  };
+
+  const pickGoal = (g: number) => {
+    H.tapLight();
+    updateProfile({ stepGoal: g });
+  };
+
+  const confirmReset = () => {
+    H.tapMedium();
     Alert.alert(
       "Reset progress?",
       "This clears your journey data but keeps your profile.",
@@ -33,13 +49,14 @@ export function ProfileScreen() {
         { text: "Reset", style: "destructive", onPress: reset },
       ]
     );
+  };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       <Text style={styles.h1}>
         {profile.name.trim() ? `${profile.name.trim()}'s profile` : "Your progress"}
       </Text>
@@ -55,9 +72,7 @@ export function ProfileScreen() {
               return (
                 <Pressable
                   key={c.id}
-                  onPress={() =>
-                    updateProfile({ condition: c.id as ConditionId })
-                  }
+                  onPress={() => pickCondition(c.id as ConditionId)}
                   style={[styles.chip, sel && styles.chipSel]}
                 >
                   <Text style={[styles.chipText, sel && { color: "#fff" }]}>
@@ -97,7 +112,7 @@ export function ProfileScreen() {
               return (
                 <Pressable
                   key={g}
-                  onPress={() => updateProfile({ stepGoal: g })}
+                  onPress={() => pickGoal(g)}
                   style={[styles.chip, sel && styles.chipSel]}
                 >
                   <Text style={[styles.chipText, sel && { color: "#fff" }]}>
@@ -139,10 +154,11 @@ export function ProfileScreen() {
         })}
       </View>
 
-      <View style={{ marginTop: theme.space(4) }}>
+      <FadeIn style={{ marginTop: theme.space(4) }}>
         <Button label="Reset progress" variant="ghost" onPress={confirmReset} />
-      </View>
-    </ScrollView>
+      </FadeIn>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

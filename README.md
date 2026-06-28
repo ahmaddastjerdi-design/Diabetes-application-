@@ -61,12 +61,31 @@ src/
   services/
     healthConnect.ts        Lazy, guarded Android Health Connect wrapper
     useHealthConnect.ts     Hook: status, permission, today's steps
+    haptics.ts              Guarded expo-haptics wrapper
   state/
     GameContext.tsx         Single source of truth, persisted via AsyncStorage
-  components/               OrganCard, MarkerRow, ActivityCard, UI primitives
+  components/
+    anim.tsx                CountUp, AnimatedBar, FadeIn, Pop primitives
+    RewardLayer.tsx         App-wide XP toast + badge/level-up celebration
+    OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
   screens/                  Onboarding, Home, Log, Learn, Profile
   theme.ts                  Design tokens
 ```
+
+### Experience / "game feel"
+
+The app leans on tactile + motion feedback to feel responsive and rewarding:
+
+- **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
+  logging, success/warning buzzes that mirror whether a choice helped or hurt.
+- **Animated everything** (RN `Animated`, no native config): counting numbers,
+  filling bars, staggered card entrances, and a press "pop".
+- **Reward moments** — a sliding **+XP toast** plus a queued **celebration
+  overlay** (with an emoji burst) for badge unlocks and level-ups, fired from one
+  central `RewardProvider` so every screen stays simple.
+- **Polish** — a gradient dashboard hero, safe-area handling on every screen, a
+  tab bar that respects the home indicator, and respect for the OS
+  "reduce motion" setting.
 
 ### Health Connect (real step data)
 

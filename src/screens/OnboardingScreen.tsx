@@ -26,6 +26,8 @@ import {
 } from "../data/profile";
 import { useHealthConnect } from "../services/useHealthConnect";
 import { Card, Button, ProgressBar } from "../components/ui";
+import { FadeIn } from "../components/anim";
+import * as H from "../services/haptics";
 import { theme } from "../theme";
 
 const STEPS = ["name", "condition", "meds", "goal", "connect"] as const;
@@ -38,17 +40,28 @@ export function OnboardingScreen() {
   const hc = useHealthConnect();
 
   const step: Step = STEPS[stepIdx];
-  const next = () => setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
-  const back = () => setStepIdx((i) => Math.max(0, i - 1));
-  const finish = () => saveProfile(draft);
+  const next = () => {
+    H.tapLight();
+    setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
+  };
+  const back = () => {
+    H.tapLight();
+    setStepIdx((i) => Math.max(0, i - 1));
+  };
+  const finish = () => {
+    H.celebrate();
+    saveProfile(draft);
+  };
 
-  const toggleMed = (id: string) =>
+  const toggleMed = (id: string) => {
+    H.tapLight();
     setDraft((d) => ({
       ...d,
       medications: d.medications.includes(id)
         ? d.medications.filter((m) => m !== id)
         : [...d.medications, id],
     }));
+  };
 
   const canContinue = step === "name" ? draft.name.trim().length > 0 : true;
 
@@ -65,6 +78,7 @@ export function OnboardingScreen() {
           color={theme.colors.primary}
         />
 
+        <FadeIn key={step} style={{ gap: theme.space(4) }}>
         {step === "name" && (
           <Card style={styles.card}>
             <Text style={styles.h}>Welcome! What should we call you?</Text>
@@ -92,9 +106,10 @@ export function OnboardingScreen() {
               return (
                 <Pressable
                   key={c.id}
-                  onPress={() =>
-                    setDraft((d) => ({ ...d, condition: c.id as ConditionId }))
-                  }
+                  onPress={() => {
+                    H.tapLight();
+                    setDraft((d) => ({ ...d, condition: c.id as ConditionId }));
+                  }}
                   style={[styles.choice, sel && styles.choiceSel]}
                 >
                   <Text style={styles.choiceEmoji}>{c.emoji}</Text>
@@ -146,7 +161,10 @@ export function OnboardingScreen() {
                 return (
                   <Pressable
                     key={g}
-                    onPress={() => setDraft((d) => ({ ...d, stepGoal: g }))}
+                    onPress={() => {
+                      H.tapLight();
+                      setDraft((d) => ({ ...d, stepGoal: g }));
+                    }}
                     style={[styles.goalChip, sel && styles.goalChipSel]}
                   >
                     <Text style={[styles.goalText, sel && { color: "#fff" }]}>
@@ -169,6 +187,7 @@ export function OnboardingScreen() {
             <HealthConnectInline hc={hc} />
           </Card>
         )}
+        </FadeIn>
 
         <View style={styles.nav}>
           <View style={{ flex: 1 }}>

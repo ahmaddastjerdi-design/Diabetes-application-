@@ -7,11 +7,14 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useGame } from "../state/GameContext";
 import { useHealthConnect } from "../services/useHealthConnect";
+import { useReward } from "./RewardLayer";
+import * as H from "../services/haptics";
 import { Card, Button, ProgressBar } from "./ui";
 import { theme } from "../theme";
 
 export function ActivityCard() {
   const { profile, logSteps, stepsSyncedToday } = useGame();
+  const { celebrate } = useReward();
   const hc = useHealthConnect();
   const [applied, setApplied] = useState<string | null>(null);
 
@@ -21,7 +24,16 @@ export function ActivityCard() {
   const onApply = () => {
     if (hc.steps == null) return;
     const res = logSteps(hc.steps);
-    if (res) setApplied(`+${res.xpGained} XP from ${hc.steps.toLocaleString()} steps 👟`);
+    if (res) {
+      H.notifySuccess();
+      celebrate(res);
+      setApplied(`+${res.xpGained} XP from ${hc.steps.toLocaleString()} steps 👟`);
+    }
+  };
+
+  const onConnect = () => {
+    H.tapMedium();
+    hc.connect();
   };
 
   return (
@@ -46,7 +58,7 @@ export function ActivityCard() {
       {hc.status === "available" && !hc.connected && (
         <Button
           label={hc.busy ? "Connecting…" : "Connect Health Connect"}
-          onPress={hc.connect}
+          onPress={onConnect}
           disabled={hc.busy}
         />
       )}
