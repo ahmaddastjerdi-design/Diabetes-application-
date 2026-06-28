@@ -103,11 +103,13 @@ export const ORGANS: Record<OrganKey, OrganDef> = {
   },
 };
 
-/** A daily snapshot of organ health, for the trend sparklines. */
+/** A daily snapshot of organ health (+ the day's glucose), for trends. */
 export interface OrganSnapshot {
   day: number;
   heart: number;
   kidney: number;
+  /** The glucose level the patient "lived" that day (drives estimated A1c). */
+  glucose: number;
 }
 
 /** How many days of organ history we keep. */
@@ -124,17 +126,24 @@ export interface BodyState {
   history: OrganSnapshot[];
 }
 
+/** The untreated daily starting point for every marker. */
+export function baselineMarkers(): Record<MarkerKey, number> {
+  return {
+    glucose: MARKERS.glucose.baseline,
+    systolic: MARKERS.systolic.baseline,
+    hydration: MARKERS.hydration.baseline,
+    ldl: MARKERS.ldl.baseline,
+  };
+}
+
 export function initialBodyState(): BodyState {
   return {
-    markers: {
-      glucose: MARKERS.glucose.baseline,
-      systolic: MARKERS.systolic.baseline,
-      hydration: MARKERS.hydration.baseline,
-      ldl: MARKERS.ldl.baseline,
-    },
+    markers: baselineMarkers(),
     organs: { heart: 70, kidney: 70 },
     day: 0,
-    history: [{ day: 0, heart: 70, kidney: 70 }],
+    history: [
+      { day: 0, heart: 70, kidney: 70, glucose: MARKERS.glucose.baseline },
+    ],
   };
 }
 
@@ -165,10 +174,11 @@ export function deviation(key: MarkerKey, value: number): number {
 }
 
 /**
- * Advance one simulated day:
- *  1. Each organ heals if the day's markers stayed healthy, else takes damage.
- *  2. Markers reset to baseline for the next day (the day's choices have been
- *     "scored"; tomorrow is a fresh start the patient again acts upon).
+ * Advance one simulated day. The input `state.markers` are the values the
+ * patient "lived" today (baseline + today's choices). We score the organs on
+ * those values and KEEP them as the visible markers, so the dashboard reflects
+ * what the latest choice did. The reset back to baseline happens at the START of
+ * the next day (see logAction), not here.
  * Returns the new state plus a per-organ delta for UI feedback.
  */
 export function advanceDay(state: BodyState): {
@@ -199,21 +209,21 @@ export function advanceDay(state: BodyState): {
     organDelta[okey] = Math.round((organs[okey] - before) * 10) / 10;
   }
 
-  // 2. Reset markers to baseline for the next day.
-  const markers = {} as Record<MarkerKey, number>;
-  for (const k of Object.keys(MARKERS) as MarkerKey[]) {
-    markers[k] = MARKERS[k].baseline;
-  }
-
-  // 3. Record the new organ snapshot, capped to the trailing window.
+  // 2. Record the new organ snapshot, capped to the trailing window.
   const day = state.day + 1;
   const history = [
     ...(state.history ?? []),
-    { day, heart: organs.heart, kidney: organs.kidney },
+    {
+      day,
+      heart: organs.heart,
+      kidney: organs.kidney,
+      glucose: state.markers.glucose, // the glucose just "lived" this day
+    },
   ].slice(-HISTORY_LIMIT);
 
+  // Keep the lived markers visible; the next day resets to baseline.
   return {
-    next: { markers, organs, day, history },
+    next: { markers: state.markers, organs, day, history },
     organDelta,
   };
 }
@@ -238,6 +248,27 @@ export function markerStatus(key: MarkerKey, value: number): {
   if (dev === 0) return { label: "In range", color: "#16a34a" };
   if (dev < 0.15) return { label: "Borderline", color: "#d97706" };
   return { label: "Out of range", color: "#dc2626" };
+}
+
+/**
+ * Estimated HbA1c (%) from a series of daily glucose values, using the standard
+ * ADAG relationship eA1c = (avg mg/dL + 46.7) / 28.7. A slow, long-term measure
+ * of overall glucose control — the number clinicians actually track. Returns
+ * null when there isn't enough history yet.
+ */
+export function estimatedA1c(glucoseHistory: number[]): number | null {
+  if (glucoseHistory.length === 0) return null;
+  const avg =
+    glucoseHistory.reduce((a, b) => a + b, 0) / glucoseHistory.length;
+  return Math.round(((avg + 46.7) / 28.7) * 10) / 10;
+}
+
+/** Status band for an estimated A1c value (clinical-ish targets). */
+export function a1cStatus(a1c: number): { label: string; color: string } {
+  if (a1c < 5.7) return { label: "Normal", color: "#16a34a" };
+  if (a1c < 7.0) return { label: "On target", color: "#65a30d" };
+  if (a1c < 8.0) return { label: "Above target", color: "#d97706" };
+  return { label: "High", color: "#dc2626" };
 }
 
 /** Plain-language tip for bringing a marker back into its healthy range. */

@@ -21,6 +21,7 @@ import {
   ORGANS,
   advanceDay,
   applyActionEffects,
+  baselineMarkers,
   deviation,
   initialBodyState,
 } from "../engine/physiology";
@@ -35,6 +36,12 @@ import {
 } from "../engine/gamification";
 import { ActionDef, stepsToAction } from "../data/actions";
 import { UserProfile, defaultProfile } from "../data/profile";
+import {
+  DailyGoalsState,
+  completeGoal,
+  freshGoals,
+  todayKey,
+} from "../data/goals";
 
 const STORAGE_KEY = "diabetes-quest/v1";
 
@@ -45,6 +52,7 @@ interface PersistedState {
   completedLessons: string[];
   profile?: UserProfile;
   lastStepSyncDay?: number;
+  dailyGoals?: DailyGoalsState;
 }
 
 export interface LogResult {
@@ -70,6 +78,8 @@ export interface GameContextValue {
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
+  /** Today's daily-goal completion state (normalised to the current day). */
+  goalsToday: DailyGoalsState;
   /** True once steps have been synced into the current simulated day. */
   stepsSyncedToday: boolean;
   /** Log an action: applies effects, awards XP, advances the day. */
@@ -91,6 +101,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [lastStepSyncDay, setLastStepSyncDay] = useState<number>(-1);
+  const [dailyGoals, setDailyGoals] = useState<DailyGoalsState>(() =>
+    freshGoals(todayKey())
+  );
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -105,7 +118,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
             const b = p.body;
             if (!b.history || b.history.length === 0) {
               b.history = [
-                { day: b.day, heart: b.organs.heart, kidney: b.organs.kidney },
+                {
+                  day: b.day,
+                  heart: b.organs.heart,
+                  kidney: b.organs.kidney,
+                  glucose: b.markers.glucose,
+                },
               ];
             }
             setBody(b);
@@ -117,6 +135,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.profile) setProfile(p.profile);
           if (typeof p.lastStepSyncDay === "number")
             setLastStepSyncDay(p.lastStepSyncDay);
+          if (p.dailyGoals) setDailyGoals(p.dailyGoals);
         }
       } catch {
         // start fresh on any corruption
@@ -136,9 +155,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       completedLessons,
       profile,
       lastStepSyncDay,
+      dailyGoals,
     };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, profile, lastStepSyncDay, ready]);
+  }, [
+    body,
+    progress,
+    completedLessons,
+    profile,
+    lastStepSyncDay,
+    dailyGoals,
+    ready,
+  ]);
+
+  // Today's goals, normalised so a stale (yesterday's) record reads as empty.
+  const goalsToday = useMemo<DailyGoalsState>(() => {
+    const today = todayKey();
+    return dailyGoals.date === today ? dailyGoals : freshGoals(today);
+  }, [dailyGoals]);
 
   const inRangeCount = useMemo(
     () =>
@@ -160,27 +194,40 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const logAction = useCallback<GameContextValue["logAction"]>(
     (action) => {
-      // 1. Immediate marker effects, then advance one simulated day.
-      const afterEffects = applyActionEffects(body, action.effects);
+      // 1. New day: start from baseline, apply this choice, score the day.
+      const fresh: BodyState = { ...body, markers: baselineMarkers() };
+      const afterEffects = applyActionEffects(fresh, action.effects);
       const { next, organDelta } = advanceDay(afterEffects);
 
       // 2. XP: base for logging + bonus if every marker ended in range.
-      const allInRange = (Object.keys(next.markers) as MarkerKey[]).every(
+      const markerKeys = Object.keys(next.markers) as MarkerKey[];
+      const inRange = markerKeys.filter(
         (k) => deviation(k, next.markers[k]) === 0
-      );
+      ).length;
+      const allInRange = inRange === markerKeys.length;
       let xpGained = XP.logAction + (allInRange ? XP.dailyAllMarkersInRange : 0);
 
-      // 3. Streak + XP into progress.
+      // 3. Daily goals: movement, and "everything in range".
+      const today = todayKey();
+      let goals = dailyGoals;
+      const goalIds: string[] = [];
+      if (action.category === "exercise") goalIds.push("move");
+      if (allInRange) goalIds.push("balance");
+      for (const id of goalIds) {
+        const r = completeGoal(goals, id, today);
+        goals = r.next;
+        xpGained += r.bonusXp;
+      }
+      if (goals !== dailyGoals) setDailyGoals(goals);
+
+      // 4. Streak + XP into progress.
       const activity = registerActivity(progress, next.day);
       let nextProgress: ProgressState = {
         ...activity.progress,
         xp: activity.progress.xp + xpGained,
       };
 
-      // 4. Badges.
-      const inRange = (Object.keys(next.markers) as MarkerKey[]).filter(
-        (k) => deviation(k, next.markers[k]) === 0
-      ).length;
+      // 5. Badges.
       const reconciled = reconcileBadges(
         nextProgress,
         badgeCtx(next, nextProgress, completedLessons.length, inRange)
@@ -200,7 +247,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         newLevel,
       };
     },
-    [body, progress, completedLessons.length, badgeCtx]
+    [body, progress, completedLessons.length, badgeCtx, dailyGoals]
   );
 
   const stepsSyncedToday = lastStepSyncDay === body.day;
@@ -232,9 +279,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         ? completedLessons
         : [...completedLessons, lessonId];
 
-      const xpGained = already
+      let xpGained = already
         ? 0
         : XP.completeLesson + (passedQuiz ? XP.passQuiz : 0);
+
+      // Daily goal: finish a lesson (only the first lesson finished today).
+      let goals = dailyGoals;
+      if (!already) {
+        const r = completeGoal(goals, "learn", todayKey());
+        goals = r.next;
+        xpGained += r.bonusXp;
+        if (goals !== dailyGoals) setDailyGoals(goals);
+      }
 
       let nextProgress: ProgressState = {
         ...progress,
@@ -258,7 +314,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         newLevel,
       };
     },
-    [completedLessons, progress, body, inRangeCount, badgeCtx]
+    [completedLessons, progress, body, inRangeCount, badgeCtx, dailyGoals]
   );
 
   const reset = useCallback(() => {
@@ -267,6 +323,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setProgress(initialProgress());
     setCompletedLessons([]);
     setLastStepSyncDay(-1);
+    setDailyGoals(freshGoals(todayKey()));
   }, []);
 
   const level = useMemo(() => levelFromXp(progress.xp), [progress.xp]);
@@ -279,6 +336,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     ready,
     level,
     inRangeCount,
+    goalsToday,
     stepsSyncedToday,
     logAction,
     logSteps,

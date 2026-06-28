@@ -11,6 +11,8 @@ import { MarkerRow } from "../components/MarkerRow";
 import { ActivityCard } from "../components/ActivityCard";
 import { BodyDiagram } from "../components/BodyDiagram";
 import { OrganDetailSheet } from "../components/OrganDetailSheet";
+import { GoalsCard } from "../components/GoalsCard";
+import { A1cCard } from "../components/A1cCard";
 import { Card } from "../components/ui";
 import { CountUp, AnimatedBar, FadeIn } from "../components/anim";
 import { getCondition } from "../data/profile";
@@ -85,13 +87,23 @@ export function HomeScreen() {
           </LinearGradient>
         </FadeIn>
 
+        {/* Today's goals — the daily hook */}
+        <FadeIn delay={50}>
+          <GoalsCard />
+        </FadeIn>
+
         {/* Living body — the centerpiece */}
-        <FadeIn delay={60}>
+        <FadeIn delay={70}>
           <BodyDiagram organs={body.organs} onSelectOrgan={openOrgan} />
         </FadeIn>
 
+        {/* Long-term control */}
+        <FadeIn delay={90}>
+          <A1cCard body={body} />
+        </FadeIn>
+
         {/* Real-data activity */}
-        <FadeIn delay={100}>
+        <FadeIn delay={110}>
           <ActivityCard />
         </FadeIn>
 

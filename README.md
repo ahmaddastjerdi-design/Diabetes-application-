@@ -71,6 +71,8 @@ src/
     CausalChain.tsx         Animated choice → markers → organs flow
     Sparkline.tsx           SVG organ-health trend line
     OrganDetailSheet.tsx    Tap an organ → trend, what's affecting it, tips
+    GoalsCard.tsx           Today's daily goals (the daily hook)
+    A1cCard.tsx             Estimated long-term HbA1c from glucose history
     TutorialOverlay.tsx     One-time "how it works" walkthrough
     OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
   screens/                  Onboarding, Home, Log, Learn, Profile

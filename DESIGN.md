@@ -84,12 +84,17 @@ out of range, so doing nothing drifts you down and good choices bring you in):
 - **Heart** ← systolic (1.0), LDL (0.8), glucose (0.5)
 - **Kidneys** ← glucose (1.0), systolic (0.9), hydration (0.6)
 
-**Daily cycle** (reset-to-baseline model, chosen for controllability — no
-unbounded marker drift across days):
-1. The patient logs actions; each action moves markers from baseline.
-2. On day-advance, organs **heal** (+1.5) if all sensitive markers were in range,
-   else take damage scaled by average deviation.
-3. Markers reset to baseline for a fresh next day.
+**Daily cycle** (each logged action = one day, evaluated from baseline — chosen
+for controllability, no unbounded marker drift across days):
+1. A new day starts from baseline; the logged choice moves the markers from there.
+2. Organs **heal** (+1.5) if all sensitive markers ended in range, else take
+   damage scaled by average deviation.
+3. The lived markers stay visible on the dashboard (so you see what the choice
+   did); the *next* action resets to baseline before applying.
+
+**Estimated HbA1c** is derived from the trailing daily-glucose history using the
+standard ADAG formula `(avg + 46.7) / 28.7`, giving a slow, long-term control
+score that rewards sustained habits rather than any single day.
 
 This is validated by `src/engine/__smoke__.ts`: a healthy routine raises organ
 health, a poor routine lowers it, and organ health always stays within [0, 100].
