@@ -1,43 +1,30 @@
 /**
- * App.tsx — clinician panel shell (Vol 3). A minimal, real entry that renders the
- * planned navigation areas. Each area is a placeholder linking to its spec section;
- * screens are built out in Phase 3 (see README). It imports the shared domain so the
- * panel and the patient app speak the exact same marker/organ language.
+ * App.tsx — clinician panel shell (Vol 3). Roster ↔ patient detail. Auth/MFA and the
+ * live backend timeline API are wired as Phase 3 continues (see README); the panel
+ * currently renders deterministic, non-PHI sample data.
  */
-import React from "react";
-import { ORGANS, MARKERS, type OrganKey, type MarkerKey } from "@diabetes-quest/shared";
-
-const AREAS = [
-  "Patient roster / population dashboard",
-  "Patient timeline",
-  "AGP-style glucose trends",
-  "Organ-health view",
-  "Decision support & alerts",
-  "Secure messaging",
-  "Remote-monitoring triage",
-  "Clinical reports",
-] as const;
+import React, { useState } from "react";
+import { Roster } from "./screens/Roster.js";
+import { PatientDetail } from "./screens/PatientDetail.js";
 
 export function App(): React.JSX.Element {
-  const organs = Object.keys(ORGANS) as OrganKey[];
-  const markers = Object.keys(MARKERS) as MarkerKey[];
+  const [openPatient, setOpenPatient] = useState<string | null>(null);
+
   return (
-    <main style={{ fontFamily: "system-ui", padding: 24, maxWidth: 880, margin: "0 auto" }}>
-      <h1>Diabetes Quest — Clinician Panel</h1>
-      <p style={{ color: "#475569" }}>
-        Scaffold (Vol 3). Shares the <code>@diabetes-quest/shared</code> domain with the
-        patient app: organs <strong>{organs.map((o) => ORGANS[o].label).join(", ")}</strong>; markers{" "}
-        <strong>{markers.map((m) => MARKERS[m].label).join(", ")}</strong>.
-      </p>
-      <h2>Planned areas</h2>
-      <ul>
-        {AREAS.map((a) => (
-          <li key={a}>{a}</li>
-        ))}
-      </ul>
-      <p style={{ color: "#94a3b8", fontSize: 14 }}>
-        Decision support is a clinician aid — never autonomous diagnosis (Vol 3 / Vol 6).
-      </p>
-    </main>
+    <div style={{ fontFamily: "system-ui", color: "#0f172a", minHeight: "100vh", background: "#fff" }}>
+      <header style={{ background: "#2563eb", color: "white", padding: "12px 24px" }}>
+        <strong>Diabetes Quest — Clinician Panel</strong>
+        <span style={{ float: "right", fontSize: 12, opacity: 0.9 }}>
+          Decision support only — not a diagnostic device
+        </span>
+      </header>
+      <main style={{ maxWidth: 880, margin: "0 auto", padding: 24 }}>
+        {openPatient ? (
+          <PatientDetail patientId={openPatient} onBack={() => setOpenPatient(null)} />
+        ) : (
+          <Roster onOpen={setOpenPatient} />
+        )}
+      </main>
+    </div>
   );
 }

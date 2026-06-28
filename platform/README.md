@@ -29,9 +29,10 @@ platform/
   package.json                 npm workspaces root
   packages/
     shared/                    ✅ contracts: domain + FHIR (one source of truth)
+    clinical/                  ✅ clinical engine: TIR/GMI/CV/AGP, decision support, risk → Vol 3
   apps/
     mobile/                    → Vol 2 · seeded by root prototype (migrates Phase 0–2)
-    clinician-web/             ⬡ Vite+React shell + config → Vol 3 (Doctor Panel)
+    clinician-web/             ⬡ React panel (roster, AGP, decision support) → Vol 3
   services/
     backend/                   ⬡ typed core + Fastify entry + schema.sql → Vol 4
     ai-coach/                  ⬡ guardrail core + Claude entry → Vol 6
