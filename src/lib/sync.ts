@@ -10,6 +10,8 @@
  * which the backend accepts only when no IdP is configured. Production swaps this for a
  * real bearer token.
  */
+import { readingToObservation, type ReadingLike } from "./fhir";
+
 export type DomainEvent =
   | { type: "action_logged"; day: number; allMarkersInRange: boolean }
   | { type: "lesson_completed"; lessonId: string; passedQuiz: boolean };
@@ -33,6 +35,7 @@ export interface ServerProgress {
 export interface SyncResult {
   ok: boolean;
   pushed: number;
+  readingsPushed: number;
   syncedIds: string[];
   serverProgress?: ServerProgress;
   error?: string;
@@ -67,6 +70,24 @@ export async function pushEvents(cfg: SyncConfig, items: readonly OutboxItem[]):
   }
 }
 
+/** Push glucose readings to the backend as FHIR Observations (idempotent). */
+export async function pushReadings(cfg: SyncConfig, readings: readonly ReadingLike[]): Promise<{ pushed: number }> {
+  let pushed = 0;
+  for (const r of readings) {
+    try {
+      const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/observations`, {
+        method: "POST",
+        headers: devAuthHeaders(cfg.userId),
+        body: JSON.stringify(readingToObservation(r, cfg.userId)),
+      });
+      if (res.ok) pushed++;
+    } catch {
+      // non-fatal; the reading stays and retries next sync
+    }
+  }
+  return { pushed };
+}
+
 /** Fetch the server-derived progress for the user. */
 export async function fetchProgress(cfg: SyncConfig): Promise<{ ok: boolean; progress?: ServerProgress; error?: string }> {
   try {
@@ -81,15 +102,22 @@ export async function fetchProgress(cfg: SyncConfig): Promise<{ ok: boolean; pro
   }
 }
 
-/** Drain the outbox then pull authoritative progress. */
-export async function syncAll(cfg: SyncConfig, outbox: readonly OutboxItem[]): Promise<SyncResult> {
-  if (!cfg.baseUrl || !cfg.userId) return { ok: false, pushed: 0, syncedIds: [], error: "sync not configured" };
+/** Drain the outbox, push readings, then pull authoritative progress. */
+export async function syncAll(
+  cfg: SyncConfig,
+  outbox: readonly OutboxItem[],
+  readings: readonly ReadingLike[] = []
+): Promise<SyncResult> {
+  if (!cfg.baseUrl || !cfg.userId)
+    return { ok: false, pushed: 0, readingsPushed: 0, syncedIds: [], error: "sync not configured" };
   const push = await pushEvents(cfg, outbox);
-  if (!push.ok) return { ok: false, pushed: 0, syncedIds: [], error: push.error };
+  if (!push.ok) return { ok: false, pushed: 0, readingsPushed: 0, syncedIds: [], error: push.error };
+  const readingResult = await pushReadings(cfg, readings);
   const prog = await fetchProgress(cfg);
   return {
     ok: prog.ok,
     pushed: push.syncedIds.length,
+    readingsPushed: readingResult.pushed,
     syncedIds: push.syncedIds,
     serverProgress: prog.progress,
     error: prog.error,

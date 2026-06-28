@@ -23,7 +23,7 @@ const CONDITION_LABEL: Record<ConditionType, string> = {
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices, outbox, markSynced } =
+  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices, outbox, markSynced, readings } =
     useGame();
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
@@ -31,11 +31,13 @@ export function SettingsScreen() {
   const doSync = async () => {
     setSyncing(true);
     setSyncMsg("");
-    const res = await syncAll({ baseUrl: profile.backendUrl, userId: profile.patientId }, outbox);
+    const res = await syncAll({ baseUrl: profile.backendUrl, userId: profile.patientId }, outbox, readings);
     if (res.ok) {
       markSynced(res.syncedIds);
       const sp = res.serverProgress;
-      setSyncMsg(`Synced ${res.pushed} event(s). Server: ${sp?.xp ?? "?"} XP, ${sp?.streak ?? "?"}-day streak.`);
+      setSyncMsg(
+        `Synced ${res.pushed} event(s) + ${res.readingsPushed} reading(s). Server: ${sp?.xp ?? "?"} XP, ${sp?.streak ?? "?"}-day streak.`
+      );
     } else {
       setSyncMsg(`Sync failed: ${res.error ?? "unknown error"}`);
     }

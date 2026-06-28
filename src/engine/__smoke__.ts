@@ -15,6 +15,7 @@ import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
+import { readingToObservation } from "../lib/fhir";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -85,6 +86,15 @@ expect("classifyGlucose flags low / in-range / high",
 expect("pendingCount reflects the outbox size", pendingCount([{ id: "a", event: { type: "lesson_completed", lessonId: "l", passedQuiz: true } }]) === 1);
 const hdrs = devAuthHeaders("p-1");
 expect("dev auth headers carry the patient identity", hdrs["x-user-id"] === "p-1" && hdrs["x-user-role"] === "patient");
+
+// A reading maps to a valid FHIR glucose Observation (synced to the backend).
+const obs = readingToObservation({ id: "r1", mgdl: 137, atMs: Date.parse("2026-06-01T08:00:00Z") }, "p-1");
+expect("reading → FHIR Observation: LOINC glucose, mg/dL, patient subject + identifier",
+  obs.code.coding[0].code === "2339-0" &&
+    obs.valueQuantity.value === 137 &&
+    obs.valueQuantity.unit === "mg/dL" &&
+    obs.subject.reference === "Patient/p-1" &&
+    obs.identifier?.[0].value === "r1");
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
