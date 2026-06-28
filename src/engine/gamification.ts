@@ -21,12 +21,21 @@ export interface ProgressState {
   graceDays: number;
   /** Earned badge ids. */
   badges: string[];
+  /** Highest achievement tier earned per achievement id. */
+  achievements: Record<string, import("./achievements").Tier>;
   /** Day index of the last day the patient logged anything. */
   lastActiveDay: number;
 }
 
 export function initialProgress(): ProgressState {
-  return { xp: 0, streak: 0, graceDays: 1, badges: [], lastActiveDay: -1 };
+  return {
+    xp: 0,
+    streak: 0,
+    graceDays: 1,
+    badges: [],
+    achievements: {},
+    lastActiveDay: -1,
+  };
 }
 
 /** XP needed to reach a given level (gentle quadratic curve). */

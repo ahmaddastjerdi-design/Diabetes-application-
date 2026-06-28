@@ -53,6 +53,7 @@ src/
   engine/
     physiology.ts           Organ-impact simulation (markers → organs)
     gamification.ts         XP, levels, badges, forgiving streak (SDT-based)
+    achievements.ts         Tiered (bronze/silver/gold) achievements
     __smoke__.ts            Runtime sanity checks for the engine
   data/
     actions.ts              Loggable diet/exercise/drug actions (+ steps→action)
@@ -98,6 +99,9 @@ The app leans on tactile + motion feedback to feel responsive and rewarding:
   loop for new patients (replayable from the Profile tab).
 - **Daily goals & weekly recap** — three resettable daily goals give a once-a-day
   hook; a "last 7 days" card recaps organ change, A1c trend, and streak.
+- **Tiered achievements** — bronze/silver/gold progression across streak,
+  lessons, days played, and organ health, with progress toward the next tier and
+  a celebration when one is reached.
 - **Medication reminders** (`expo-notifications`) — opt-in daily local reminder
   that names the patient's meds. Local-only; scheduling is most reliable on an
   Android development build (it's guarded and degrades gracefully elsewhere).

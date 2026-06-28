@@ -24,7 +24,12 @@ import {
   UserProfile,
   defaultProfile,
 } from "../data/profile";
+import { reminderBody } from "../data/profile";
 import { useHealthConnect } from "../services/useHealthConnect";
+import {
+  requestPermission,
+  scheduleMedicationReminder,
+} from "../services/notifications";
 import { Card, Button, ProgressBar } from "../components/ui";
 import { FadeIn } from "../components/anim";
 import * as H from "../services/haptics";
@@ -48,9 +53,26 @@ export function OnboardingScreen() {
     H.tapLight();
     setStepIdx((i) => Math.max(0, i - 1));
   };
-  const finish = () => {
+  const finish = async () => {
     H.celebrate();
+    if (draft.reminderEnabled) {
+      const granted = await requestPermission();
+      if (granted) {
+        await scheduleMedicationReminder(
+          draft.reminderHour,
+          0,
+          reminderBody(draft.medications)
+        );
+      }
+      saveProfile({ ...draft, reminderEnabled: granted });
+      return;
+    }
     saveProfile(draft);
+  };
+
+  const toggleReminder = () => {
+    H.tapLight();
+    setDraft((d) => ({ ...d, reminderEnabled: !d.reminderEnabled }));
   };
 
   const toggleMed = (id: string) => {
@@ -185,6 +207,29 @@ export function OnboardingScreen() {
               automatically. You can always do this later from the Home screen.
             </Text>
             <HealthConnectInline hc={hc} />
+
+            {draft.medications.length > 0 && (
+              <Pressable
+                onPress={toggleReminder}
+                style={[
+                  styles.reminderRow,
+                  draft.reminderEnabled && styles.reminderRowOn,
+                ]}
+              >
+                <Text style={styles.reminderEmoji}>🔔</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reminderTitle}>
+                    Daily medication reminder
+                  </Text>
+                  <Text style={styles.reminderSub}>
+                    A gentle nudge each evening to take your meds.
+                  </Text>
+                </View>
+                <Text style={styles.reminderCheck}>
+                  {draft.reminderEnabled ? "☑️" : "⬜"}
+                </Text>
+              </Pressable>
+            )}
           </Card>
         )}
         </FadeIn>
@@ -299,6 +344,24 @@ const styles = StyleSheet.create({
   },
   goalText: { fontSize: 15, fontWeight: "700", color: theme.colors.text },
   note: { fontSize: 13, color: theme.colors.subtext, lineHeight: 19 },
+  reminderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space(3),
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.space(3),
+    marginTop: theme.space(1),
+  },
+  reminderRowOn: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary + "10",
+  },
+  reminderEmoji: { fontSize: 24 },
+  reminderTitle: { fontSize: 14, fontWeight: "700", color: theme.colors.text },
+  reminderSub: { fontSize: 12, color: theme.colors.subtext, marginTop: 2 },
+  reminderCheck: { fontSize: 18 },
   nav: {
     flexDirection: "row",
     gap: theme.space(3),

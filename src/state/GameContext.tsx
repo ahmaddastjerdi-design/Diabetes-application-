@@ -34,6 +34,12 @@ import {
   reconcileBadges,
   registerActivity,
 } from "../engine/gamification";
+import {
+  reconcileAchievements,
+  TIER_META,
+  Tier,
+  AchievementDef,
+} from "../engine/achievements";
 import { ActionDef, stepsToAction } from "../data/actions";
 import { UserProfile, defaultProfile } from "../data/profile";
 import {
@@ -94,6 +100,24 @@ export interface GameContextValue {
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
+
+/** Present a newly-earned achievement tier as a celebratory "badge". */
+function achievementToBadge({
+  def,
+  tier,
+}: {
+  def: AchievementDef;
+  tier: Tier;
+}): BadgeDef {
+  const m = TIER_META[tier];
+  return {
+    id: `${def.id}-${tier}`,
+    label: `${m.label}: ${def.title}`,
+    emoji: m.emoji,
+    description: `${def.title} — ${m.label} tier reached!`,
+    earned: () => true,
+  };
+}
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [body, setBody] = useState<BodyState>(initialBodyState);
@@ -227,21 +251,35 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         xp: activity.progress.xp + xpGained,
       };
 
-      // 5. Badges.
+      // 5. Badges + tiered achievements.
       const reconciled = reconcileBadges(
         nextProgress,
         badgeCtx(next, nextProgress, completedLessons.length, inRange)
       );
+      const ach = reconcileAchievements(reconciled.progress.achievements ?? {}, {
+        streak: reconciled.progress.streak,
+        lessons: completedLessons.length,
+        daysLogged: next.day,
+        heart: next.organs.heart,
+        kidney: next.organs.kidney,
+      });
+      const finalProgress: ProgressState = {
+        ...reconciled.progress,
+        achievements: ach.earned,
+      };
 
       setBody(next);
-      setProgress(reconciled.progress);
+      setProgress(finalProgress);
 
       const prevLevel = levelFromXp(progress.xp).level;
-      const newLevel = levelFromXp(reconciled.progress.xp).level;
+      const newLevel = levelFromXp(finalProgress.xp).level;
 
       return {
         organDelta,
-        newBadges: reconciled.newlyEarned,
+        newBadges: [
+          ...reconciled.newlyEarned,
+          ...ach.newly.map(achievementToBadge),
+        ],
         xpGained,
         leveledUp: newLevel > prevLevel,
         newLevel,
@@ -300,15 +338,29 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         nextProgress,
         badgeCtx(body, nextProgress, lessons.length, inRangeCount)
       );
+      const ach = reconcileAchievements(reconciled.progress.achievements ?? {}, {
+        streak: reconciled.progress.streak,
+        lessons: lessons.length,
+        daysLogged: body.day,
+        heart: body.organs.heart,
+        kidney: body.organs.kidney,
+      });
+      const finalProgress: ProgressState = {
+        ...reconciled.progress,
+        achievements: ach.earned,
+      };
 
       if (!already) setCompletedLessons(lessons);
-      setProgress(reconciled.progress);
+      setProgress(finalProgress);
 
       const prevLevel = levelFromXp(progress.xp).level;
-      const newLevel = levelFromXp(reconciled.progress.xp).level;
+      const newLevel = levelFromXp(finalProgress.xp).level;
 
       return {
-        newBadges: reconciled.newlyEarned,
+        newBadges: [
+          ...reconciled.newlyEarned,
+          ...ach.newly.map(achievementToBadge),
+        ],
         xpGained,
         leveledUp: newLevel > prevLevel,
         newLevel,

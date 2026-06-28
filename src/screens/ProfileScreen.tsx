@@ -13,6 +13,7 @@ import {
 import { Card, Button, ProgressBar } from "../components/ui";
 import { FadeIn } from "../components/anim";
 import { RemindersCard } from "../components/RemindersCard";
+import { AchievementsCard } from "../components/AchievementsCard";
 import * as H from "../services/haptics";
 import { theme } from "../theme";
 
@@ -142,6 +143,9 @@ export function ProfileScreen() {
           <Summary value={`${owned.size}`} label="badges" />
         </View>
       </Card>
+
+      <Text style={styles.h2}>Achievements</Text>
+      <AchievementsCard />
 
       <Text style={styles.h2}>Badges</Text>
       <View style={styles.badgeGrid}>
