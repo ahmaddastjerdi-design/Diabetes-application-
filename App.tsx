@@ -21,6 +21,7 @@ import { LogScreen } from "./src/screens/LogScreen";
 import { LearnScreen } from "./src/screens/LearnScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { TutorialOverlay } from "./src/components/TutorialOverlay";
 import { theme } from "./src/theme";
 
 const Tab = createBottomTabNavigator();
@@ -33,7 +34,7 @@ const TAB_ICON: Record<string, string> = {
 };
 
 function Root() {
-  const { ready, profile } = useGame();
+  const { ready, profile, updateProfile } = useGame();
 
   if (!ready) {
     return (
@@ -48,7 +49,14 @@ function Root() {
     return <OnboardingScreen />;
   }
 
-  return <Tabs />;
+  return (
+    <>
+      <Tabs />
+      {!profile.tutorialSeen && (
+        <TutorialOverlay onDone={() => updateProfile({ tutorialSeen: true })} />
+      )}
+    </>
+  );
 }
 
 function Tabs() {

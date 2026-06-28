@@ -154,7 +154,15 @@ export function ProfileScreen() {
         })}
       </View>
 
-      <FadeIn style={{ marginTop: theme.space(4) }}>
+      <FadeIn style={{ marginTop: theme.space(4), gap: theme.space(2.5) }}>
+        <Button
+          label="Replay walkthrough"
+          variant="ghost"
+          onPress={() => {
+            H.tapLight();
+            updateProfile({ tutorialSeen: false });
+          }}
+        />
         <Button label="Reset progress" variant="ghost" onPress={confirmReset} />
       </FadeIn>
       </ScrollView>

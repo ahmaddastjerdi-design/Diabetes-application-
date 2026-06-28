@@ -103,6 +103,16 @@ export const ORGANS: Record<OrganKey, OrganDef> = {
   },
 };
 
+/** A daily snapshot of organ health, for the trend sparklines. */
+export interface OrganSnapshot {
+  day: number;
+  heart: number;
+  kidney: number;
+}
+
+/** How many days of organ history we keep. */
+export const HISTORY_LIMIT = 30;
+
 /** The full simulated body state. Persisted between sessions. */
 export interface BodyState {
   markers: Record<MarkerKey, number>;
@@ -110,6 +120,8 @@ export interface BodyState {
   organs: Record<OrganKey, number>;
   /** Day index since the patient started. */
   day: number;
+  /** Trailing organ-health snapshots (oldest first), capped to HISTORY_LIMIT. */
+  history: OrganSnapshot[];
 }
 
 export function initialBodyState(): BodyState {
@@ -122,6 +134,7 @@ export function initialBodyState(): BodyState {
     },
     organs: { heart: 70, kidney: 70 },
     day: 0,
+    history: [{ day: 0, heart: 70, kidney: 70 }],
   };
 }
 
@@ -192,8 +205,15 @@ export function advanceDay(state: BodyState): {
     markers[k] = MARKERS[k].baseline;
   }
 
+  // 3. Record the new organ snapshot, capped to the trailing window.
+  const day = state.day + 1;
+  const history = [
+    ...(state.history ?? []),
+    { day, heart: organs.heart, kidney: organs.kidney },
+  ].slice(-HISTORY_LIMIT);
+
   return {
-    next: { markers, organs, day: state.day + 1 },
+    next: { markers, organs, day, history },
     organDelta,
   };
 }
@@ -218,6 +238,48 @@ export function markerStatus(key: MarkerKey, value: number): {
   if (dev === 0) return { label: "In range", color: "#16a34a" };
   if (dev < 0.15) return { label: "Borderline", color: "#d97706" };
   return { label: "Out of range", color: "#dc2626" };
+}
+
+/** Plain-language tip for bringing a marker back into its healthy range. */
+export const MARKER_TIPS: Record<MarkerKey, string> = {
+  glucose: "Take a walk or your glucose medicine to bring blood sugar down.",
+  systolic: "Cut back on salt and take your blood-pressure medicine.",
+  hydration: "Drink a glass of water to help your kidneys filter.",
+  ldl: "Choose healthy fats (like fish) and take your statin.",
+};
+
+export interface OrganInsight {
+  marker: MarkerKey;
+  value: number;
+  weight: number;
+  status: ReturnType<typeof markerStatus>;
+  inRange: boolean;
+  tip: string;
+}
+
+/**
+ * For an organ, the markers that affect it — most-out-of-range first — so the
+ * detail sheet can explain "what's helping / hurting this organ right now".
+ */
+export function organInsights(
+  organKey: OrganKey,
+  markers: Record<MarkerKey, number>
+): OrganInsight[] {
+  const sens = ORGANS[organKey].sensitivity;
+  return (Object.keys(sens) as MarkerKey[])
+    .map((marker) => {
+      const value = markers[marker];
+      const dev = deviation(marker, value);
+      return {
+        marker,
+        value,
+        weight: sens[marker] ?? 0,
+        status: markerStatus(marker, value),
+        inRange: dev === 0,
+        tip: MARKER_TIPS[marker],
+      };
+    })
+    .sort((a, b) => deviation(b.marker, b.value) - deviation(a.marker, a.value));
 }
 
 function clamp(v: number, [lo, hi]: [number, number]): number {

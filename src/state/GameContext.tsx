@@ -100,7 +100,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const p: PersistedState = JSON.parse(raw);
-          if (p.body) setBody(p.body);
+          if (p.body) {
+            // Migration: backfill organ history for pre-history saves.
+            const b = p.body;
+            if (!b.history || b.history.length === 0) {
+              b.history = [
+                { day: b.day, heart: b.organs.heart, kidney: b.organs.kidney },
+              ];
+            }
+            setBody(b);
+          }
           if (p.progress) setProgress(p.progress);
           if (p.completedLessons) setCompletedLessons(p.completedLessons);
           // Migration: pre-onboarding saves have no profile -> stays default

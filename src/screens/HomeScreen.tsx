@@ -1,5 +1,5 @@
 /** HomeScreen.tsx — the dashboard: level, streak, organs, and live markers. */
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,9 +10,11 @@ import { OrganCard } from "../components/OrganCard";
 import { MarkerRow } from "../components/MarkerRow";
 import { ActivityCard } from "../components/ActivityCard";
 import { BodyDiagram } from "../components/BodyDiagram";
+import { OrganDetailSheet } from "../components/OrganDetailSheet";
 import { Card } from "../components/ui";
 import { CountUp, AnimatedBar, FadeIn } from "../components/anim";
 import { getCondition } from "../data/profile";
+import * as H from "../services/haptics";
 import { theme } from "../theme";
 
 export function HomeScreen() {
@@ -20,6 +22,12 @@ export function HomeScreen() {
   const condition = getCondition(profile.condition);
   const name = profile.name.trim();
   const markerKeys = Object.keys(MARKERS) as MarkerKey[];
+  const [selectedOrgan, setSelectedOrgan] = useState<OrganKey | null>(null);
+
+  const openOrgan = (k: OrganKey) => {
+    H.tapLight();
+    setSelectedOrgan(k);
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -79,7 +87,7 @@ export function HomeScreen() {
 
         {/* Living body — the centerpiece */}
         <FadeIn delay={60}>
-          <BodyDiagram organs={body.organs} />
+          <BodyDiagram organs={body.organs} onSelectOrgan={openOrgan} />
         </FadeIn>
 
         {/* Real-data activity */}
@@ -91,7 +99,11 @@ export function HomeScreen() {
         <Text style={styles.h2}>Organ detail</Text>
         {(Object.keys(ORGANS) as OrganKey[]).map((k, i) => (
           <FadeIn key={k} delay={120 + i * 80}>
-            <OrganCard organ={ORGANS[k]} score={body.organs[k]} />
+            <OrganCard
+              organ={ORGANS[k]}
+              score={body.organs[k]}
+              onPress={() => openOrgan(k)}
+            />
           </FadeIn>
         ))}
 
@@ -113,6 +125,12 @@ export function HomeScreen() {
           your own care team's guidance.
         </Text>
       </ScrollView>
+
+      <OrganDetailSheet
+        organKey={selectedOrgan}
+        body={body}
+        onClose={() => setSelectedOrgan(null)}
+      />
     </SafeAreaView>
   );
 }

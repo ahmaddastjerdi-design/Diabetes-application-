@@ -88,6 +88,8 @@ export interface UserProfile {
   medications: string[];
   stepGoal: number;
   onboarded: boolean;
+  /** Whether the one-time "how it works" walkthrough has been seen. */
+  tutorialSeen: boolean;
 }
 
 export function defaultProfile(): UserProfile {
@@ -97,5 +99,6 @@ export function defaultProfile(): UserProfile {
     medications: [],
     stepGoal: 6000,
     onboarded: false,
+    tutorialSeen: false,
   };
 }

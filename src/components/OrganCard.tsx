@@ -1,6 +1,6 @@
 /** OrganCard.tsx — visualises one organ's health, the heart of the "aesthetic". */
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { OrganDef, organStatus } from "../engine/physiology";
 import { Card, ProgressBar, Pill } from "./ui";
 import { CountUp } from "./anim";
@@ -10,13 +10,20 @@ export function OrganCard({
   organ,
   score,
   delta,
+  onPress,
 }: {
   organ: OrganDef;
   score: number;
   delta?: number;
+  onPress?: () => void;
 }) {
   const status = organStatus(score);
   return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => pressed && onPress ? { opacity: 0.85 } : null}
+    >
     <Card style={styles.card}>
       <View style={styles.row}>
         <Text style={styles.emoji}>{organ.emoji}</Text>
@@ -43,7 +50,9 @@ export function OrganCard({
       </View>
       <ProgressBar value={score / 100} color={status.color} height={12} />
       <Text style={styles.blurb}>{organ.blurb}</Text>
+      {onPress && <Text style={styles.cta}>Tap for trend & tips ›</Text>}
     </Card>
+    </Pressable>
   );
 }
 
@@ -66,4 +75,10 @@ const styles = StyleSheet.create({
   },
   score: { fontSize: 26, fontWeight: "800" },
   blurb: { fontSize: 13, color: theme.colors.subtext, lineHeight: 18 },
+  cta: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginTop: -theme.space(1),
+  },
 });

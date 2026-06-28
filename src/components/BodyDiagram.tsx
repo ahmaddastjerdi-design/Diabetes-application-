@@ -6,7 +6,14 @@
  * respond to their choices on an actual body, not just a number.
  */
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, AccessibilityInfo } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  AccessibilityInfo,
+  Pressable,
+} from "react-native";
 import Svg, { Path, Circle, G } from "react-native-svg";
 import { ORGANS, OrganKey, organStatus } from "../engine/physiology";
 import { Card } from "./ui";
@@ -18,8 +25,10 @@ const SILHOUETTE = "#dbe4ee";
 
 export function BodyDiagram({
   organs,
+  onSelectOrgan,
 }: {
   organs: Record<OrganKey, number>;
+  onSelectOrgan?: (k: OrganKey) => void;
 }) {
   const heartColor = organStatus(organs.heart).color;
   const kidneyColor = organStatus(organs.kidney).color;
@@ -98,12 +107,20 @@ export function BodyDiagram({
         </Svg>
       </View>
 
-      {/* Legend */}
+      {/* Legend (tap to open organ detail) */}
       <View style={styles.legend}>
         {(["heart", "kidney"] as OrganKey[]).map((k) => {
           const s = organStatus(organs[k]);
           return (
-            <View key={k} style={styles.legendItem}>
+            <Pressable
+              key={k}
+              onPress={() => onSelectOrgan?.(k)}
+              disabled={!onSelectOrgan}
+              style={({ pressed }) => [
+                styles.legendItem,
+                pressed && onSelectOrgan ? { opacity: 0.6 } : null,
+              ]}
+            >
               <View style={[styles.dot, { backgroundColor: s.color }]} />
               <Text style={styles.legendLabel}>
                 {ORGANS[k].emoji} {ORGANS[k].label}
@@ -111,7 +128,7 @@ export function BodyDiagram({
               <Text style={[styles.legendStatus, { color: s.color }]}>
                 {s.label}
               </Text>
-            </View>
+            </Pressable>
           );
         })}
       </View>

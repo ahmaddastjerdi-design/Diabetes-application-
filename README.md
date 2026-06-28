@@ -69,6 +69,9 @@ src/
     RewardLayer.tsx         App-wide XP toast + badge/level-up celebration
     BodyDiagram.tsx         SVG body whose organs tint by health + heartbeat
     CausalChain.tsx         Animated choice → markers → organs flow
+    Sparkline.tsx           SVG organ-health trend line
+    OrganDetailSheet.tsx    Tap an organ → trend, what's affecting it, tips
+    TutorialOverlay.tsx     One-time "how it works" walkthrough
     OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
   screens/                  Onboarding, Home, Log, Learn, Profile
   theme.ts                  Design tokens
@@ -83,6 +86,11 @@ The app leans on tactile + motion feedback to feel responsive and rewarding:
   gentle pulsing heartbeat. The organ-impact concept made visual.
 - **Animated causal chain** — after you log a choice, a `choice → markers →
   organs` flow fades in link by link, teaching the mechanism, not just the score.
+- **Organ detail sheet** — tap any organ (or the body legend) for a bottom sheet
+  with a health-trend sparkline, what's affecting it right now, and concrete tips
+  for whatever is out of range.
+- **Guided first session** — a one-time, skippable walkthrough frames the core
+  loop for new patients (replayable from the Profile tab).
 - **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
   logging, success/warning buzzes that mirror whether a choice helped or hurt.
 - **Animated everything** (RN `Animated`, no native config): counting numbers,
