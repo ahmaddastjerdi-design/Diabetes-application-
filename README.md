@@ -50,6 +50,11 @@ reminder times, and privacy (export / delete). Units flow through `MarkerRow` ev
 **Devices** (`DeviceScreen`) handles device pairing, a Health Connect explainer, and
 manual glucose entry with validation + classification.
 
+**Cloud sync** (opt-in, in Settings) records logged choices in an outbox and pushes them
+to the platform backend (`@diabetes-quest/backend`), which derives the official
+progress server-side and returns it (`src/lib/sync.ts`). Off by default — the app is
+fully functional offline; nothing leaves the device until you enable sync.
+
 ## Code map
 
 ```

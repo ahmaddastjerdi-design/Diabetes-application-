@@ -14,6 +14,7 @@ import { getAction } from "../data/actions";
 import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
+import { pendingCount, devAuthHeaders } from "../lib/sync";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -79,6 +80,11 @@ expect("implausible glucose reading is rejected", validateGlucoseReading(5, "mg/
 expect("a valid mg/dL reading is accepted", validateGlucoseReading(120, "mg/dL").ok === true);
 expect("classifyGlucose flags low / in-range / high",
   classifyGlucose(60) === "low" && classifyGlucose(120) === "in-range" && classifyGlucose(250) === "high");
+
+// Backend sync helpers (PRD local→synced migration).
+expect("pendingCount reflects the outbox size", pendingCount([{ id: "a", event: { type: "lesson_completed", lessonId: "l", passedQuiz: true } }]) === 1);
+const hdrs = devAuthHeaders("p-1");
+expect("dev auth headers carry the patient identity", hdrs["x-user-id"] === "p-1" && hdrs["x-user-role"] === "patient");
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

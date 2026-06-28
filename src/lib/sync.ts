@@ -1,0 +1,97 @@
+/**
+ * sync.ts — backend sync client (PRD Vol 2: migrate local-only → synced).
+ *
+ * Offline-first and opt-in: the app records domain events in an outbox as they happen;
+ * this client drains the outbox to the platform backend (which derives XP/streak/badges
+ * server-side) and pulls the authoritative progress back. Network failures are
+ * non-fatal — the app keeps working locally and retries on the next sync.
+ *
+ * Auth: until the OIDC login flow lands, dev/demo identity is sent via x-user-* headers,
+ * which the backend accepts only when no IdP is configured. Production swaps this for a
+ * real bearer token.
+ */
+export type DomainEvent =
+  | { type: "action_logged"; day: number; allMarkersInRange: boolean }
+  | { type: "lesson_completed"; lessonId: string; passedQuiz: boolean };
+
+export interface OutboxItem {
+  id: string; // idempotency key (backend dedupes on it)
+  event: DomainEvent;
+}
+
+export interface SyncConfig {
+  baseUrl: string;
+  userId: string;
+}
+
+export interface ServerProgress {
+  xp: number;
+  streak: number;
+  level: number;
+}
+
+export interface SyncResult {
+  ok: boolean;
+  pushed: number;
+  syncedIds: string[];
+  serverProgress?: ServerProgress;
+  error?: string;
+}
+
+export function pendingCount(outbox: readonly OutboxItem[]): number {
+  return outbox.length;
+}
+
+/** Dev/demo auth headers — replaced by an OIDC bearer token in production. */
+export function devAuthHeaders(userId: string): Record<string, string> {
+  return { "content-type": "application/json", "x-user-id": userId, "x-user-role": "patient" };
+}
+
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+/** Push pending outbox events to the backend; returns the ids the server accepted. */
+export async function pushEvents(cfg: SyncConfig, items: readonly OutboxItem[]): Promise<{ ok: boolean; syncedIds: string[]; error?: string }> {
+  if (items.length === 0) return { ok: true, syncedIds: [] };
+  try {
+    const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/patients/${cfg.userId}/events`, {
+      method: "POST",
+      headers: devAuthHeaders(cfg.userId),
+      body: JSON.stringify(items),
+    });
+    if (!res.ok) return { ok: false, syncedIds: [], error: `server returned ${res.status}` };
+    return { ok: true, syncedIds: items.map((i) => i.id) };
+  } catch (e) {
+    return { ok: false, syncedIds: [], error: e instanceof Error ? e.message : "network error" };
+  }
+}
+
+/** Fetch the server-derived progress for the user. */
+export async function fetchProgress(cfg: SyncConfig): Promise<{ ok: boolean; progress?: ServerProgress; error?: string }> {
+  try {
+    const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/patients/${cfg.userId}/progress`, {
+      headers: devAuthHeaders(cfg.userId),
+    });
+    if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
+    const p = (await res.json()) as ServerProgress;
+    return { ok: true, progress: p };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "network error" };
+  }
+}
+
+/** Drain the outbox then pull authoritative progress. */
+export async function syncAll(cfg: SyncConfig, outbox: readonly OutboxItem[]): Promise<SyncResult> {
+  if (!cfg.baseUrl || !cfg.userId) return { ok: false, pushed: 0, syncedIds: [], error: "sync not configured" };
+  const push = await pushEvents(cfg, outbox);
+  if (!push.ok) return { ok: false, pushed: 0, syncedIds: [], error: push.error };
+  const prog = await fetchProgress(cfg);
+  return {
+    ok: prog.ok,
+    pushed: push.syncedIds.length,
+    syncedIds: push.syncedIds,
+    serverProgress: prog.progress,
+    error: prog.error,
+  };
+}

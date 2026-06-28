@@ -36,6 +36,7 @@ import {
 import { ActionDef } from "../data/actions";
 import { GlucoseUnit } from "../lib/units";
 import { DeviceKind } from "../lib/health";
+import { OutboxItem } from "../lib/sync";
 
 const STORAGE_KEY = "diabetes-quest/v1";
 
@@ -48,6 +49,11 @@ export interface Profile {
   conditionType: ConditionType;
   glucoseUnit: GlucoseUnit;
   remindersEnabled: boolean;
+  /** Stable per-install patient id used as the backend subject (Vol 4). */
+  patientId: string;
+  /** Opt-in cloud sync to the platform backend. */
+  syncEnabled: boolean;
+  backendUrl: string;
 }
 
 export function initialProfile(): Profile {
@@ -57,6 +63,9 @@ export function initialProfile(): Profile {
     conditionType: "type2",
     glucoseUnit: "mg/dL",
     remindersEnabled: true,
+    patientId: "",
+    syncEnabled: false,
+    backendUrl: "",
   };
 }
 
@@ -84,6 +93,7 @@ interface PersistedState {
   pairedDevices?: PairedDevice[];
   readings?: Reading[];
   reminders?: string[];
+  outbox?: OutboxItem[];
 }
 
 export interface GameContextValue {
@@ -94,17 +104,20 @@ export interface GameContextValue {
   pairedDevices: PairedDevice[];
   readings: Reading[];
   reminders: string[];
+  outbox: OutboxItem[];
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
   /** Finish onboarding with the chosen profile settings. */
-  completeOnboarding: (settings: Omit<Profile, "onboarded">) => void;
+  completeOnboarding: (settings: Partial<Profile>) => void;
   /** Update one or more profile fields (Settings). */
   updateProfile: (partial: Partial<Profile>) => void;
   pairDevice: (kind: DeviceKind, name: string) => void;
   unpairDevice: (id: string) => void;
   addReading: (mgdl: number, source: Reading["source"]) => void;
   toggleReminder: (slotId: string) => void;
+  /** Remove outbox events the backend has accepted. */
+  markSynced: (ids: string[]) => void;
   /** Log an action: applies effects, awards XP, advances the day. */
   logAction: (action: ActionDef) => {
     organDelta: Record<OrganKey, number>;
@@ -128,6 +141,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [reminders, setReminders] = useState<string[]>([]);
+  const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -144,6 +158,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.pairedDevices) setPairedDevices(p.pairedDevices);
           if (p.readings) setReadings(p.readings);
           if (p.reminders) setReminders(p.reminders);
+          if (p.outbox) setOutbox(p.outbox);
         }
       } catch {
         // start fresh on any corruption
@@ -156,9 +171,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders };
+    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, ready]);
+  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -209,6 +224,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setBody(next);
       setProgress(reconciled.progress);
 
+      // Record the domain event for backend sync (server re-derives progress from these).
+      const eventId = `e-${next.day}-${Date.now()}`;
+      setOutbox((prev) => [
+        ...prev,
+        { id: eventId, event: { type: "action_logged", day: next.day, allMarkersInRange: allInRange } },
+      ]);
+
       return { organDelta, newBadges: reconciled.newlyEarned, xpGained };
     },
     [body, progress, completedLessons.length, badgeCtx]
@@ -234,7 +256,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         badgeCtx(body, nextProgress, lessons.length, inRangeCount)
       );
 
-      if (!already) setCompletedLessons(lessons);
+      if (!already) {
+        setCompletedLessons(lessons);
+        setOutbox((prev) => [
+          ...prev,
+          { id: `e-lesson-${lessonId}`, event: { type: "lesson_completed", lessonId, passedQuiz } },
+        ]);
+      }
       setProgress(reconciled.progress);
 
       return { newBadges: reconciled.newlyEarned, xpGained };
@@ -243,7 +271,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
 
   const completeOnboarding = useCallback<GameContextValue["completeOnboarding"]>((settings) => {
-    setProfile({ ...settings, onboarded: true });
+    setProfile({ ...initialProfile(), ...settings, onboarded: true, patientId: `p-${Date.now()}` });
+  }, []);
+
+  const markSynced = useCallback<GameContextValue["markSynced"]>((ids) => {
+    const done = new Set(ids);
+    setOutbox((prev) => prev.filter((item) => !done.has(item.id)));
   }, []);
 
   const updateProfile = useCallback<GameContextValue["updateProfile"]>((partial) => {
@@ -285,6 +318,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     pairedDevices,
     readings,
     reminders,
+    outbox,
     ready,
     level,
     inRangeCount,
@@ -294,6 +328,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     unpairDevice,
     addReading,
     toggleReminder,
+    markSynced,
     logAction,
     completeLesson,
     reset,

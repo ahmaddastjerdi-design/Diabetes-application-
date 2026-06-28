@@ -3,12 +3,13 @@
  * Glucose units, condition, reminders, plus privacy actions (export / delete) reflecting
  * the educational-only, local-data posture.
  */
-import React from "react";
-import { ScrollView, View, Text, StyleSheet, Switch, Pressable, Alert } from "react-native";
+import React, { useState } from "react";
+import { ScrollView, View, Text, StyleSheet, Switch, Pressable, Alert, TextInput } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useGame, ConditionType } from "../state/GameContext";
 import { GlucoseUnit } from "../lib/units";
 import { REMINDER_SLOTS } from "../lib/health";
+import { syncAll, pendingCount } from "../lib/sync";
 import { Card, Button } from "../components/ui";
 import { theme } from "../theme";
 
@@ -22,8 +23,24 @@ const CONDITION_LABEL: Record<ConditionType, string> = {
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices } =
+  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices, outbox, markSynced } =
     useGame();
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
+
+  const doSync = async () => {
+    setSyncing(true);
+    setSyncMsg("");
+    const res = await syncAll({ baseUrl: profile.backendUrl, userId: profile.patientId }, outbox);
+    if (res.ok) {
+      markSynced(res.syncedIds);
+      const sp = res.serverProgress;
+      setSyncMsg(`Synced ${res.pushed} event(s). Server: ${sp?.xp ?? "?"} XP, ${sp?.streak ?? "?"}-day streak.`);
+    } else {
+      setSyncMsg(`Sync failed: ${res.error ?? "unknown error"}`);
+    }
+    setSyncing(false);
+  };
 
   const exportData = () =>
     Alert.alert(
@@ -109,6 +126,42 @@ export function SettingsScreen() {
       </Card>
 
       <Card style={styles.card}>
+        <Text style={styles.section}>Cloud sync (beta)</Text>
+        <Text style={styles.hint}>
+          Off by default — your data stays on this device until you enable it. When on, your logged
+          choices sync to the care platform, which computes your official progress.
+        </Text>
+        <View style={styles.rowBetween}>
+          <Text style={styles.section}>Enable sync</Text>
+          <Switch
+            value={profile.syncEnabled}
+            onValueChange={(v) => updateProfile({ syncEnabled: v })}
+            trackColor={{ true: theme.colors.primary }}
+          />
+        </View>
+        {profile.syncEnabled && (
+          <>
+            <TextInput
+              style={styles.urlInput}
+              value={profile.backendUrl}
+              onChangeText={(t) => updateProfile({ backendUrl: t })}
+              placeholder="https://backend.example.com"
+              placeholderTextColor={theme.colors.subtext}
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Backend URL"
+            />
+            <Button
+              label={syncing ? "Syncing…" : `Sync now (${pendingCount(outbox)} pending)`}
+              onPress={doSync}
+              disabled={syncing || !profile.backendUrl}
+            />
+            {syncMsg ? <Text style={styles.hint}>{syncMsg}</Text> : null}
+          </>
+        )}
+      </Card>
+
+      <Card style={styles.card}>
         <Text style={styles.section}>Privacy</Text>
         <Text style={styles.hint}>Your data stays on this device. No account, no PII leaves your phone.</Text>
         <Button label="Export my data" variant="ghost" onPress={exportData} />
@@ -169,5 +222,13 @@ const styles = StyleSheet.create({
   chipOn: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + "11" },
   chipText: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
   chipTextOn: { color: theme.colors.primary },
+  urlInput: {
+    backgroundColor: theme.colors.bg,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space(3.5),
+    paddingVertical: theme.space(3),
+    color: theme.colors.text,
+    fontSize: 14,
+  },
   disclaimer: { fontSize: 11, color: theme.colors.subtext, textAlign: "center", marginTop: theme.space(2), lineHeight: 16 },
 });
