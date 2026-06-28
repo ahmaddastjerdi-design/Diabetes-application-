@@ -8,6 +8,7 @@ import { ScrollView, View, Text, StyleSheet, Switch, Pressable, Alert } from "re
 import { useNavigation } from "@react-navigation/native";
 import { useGame, ConditionType } from "../state/GameContext";
 import { GlucoseUnit } from "../lib/units";
+import { REMINDER_SLOTS } from "../lib/health";
 import { Card, Button } from "../components/ui";
 import { theme } from "../theme";
 
@@ -21,7 +22,8 @@ const CONDITION_LABEL: Record<ConditionType, string> = {
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { profile, updateProfile, body, progress, completedLessons, reset } = useGame();
+  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices } =
+    useGame();
 
   const exportData = () =>
     Alert.alert(
@@ -81,6 +83,29 @@ export function SettingsScreen() {
           onValueChange={(v) => updateProfile({ remindersEnabled: v })}
           trackColor={{ true: theme.colors.primary }}
         />
+      </Card>
+
+      {profile.remindersEnabled && (
+        <Card style={styles.card}>
+          <Text style={styles.section}>Reminder times</Text>
+          <View style={styles.chips}>
+            {REMINDER_SLOTS.map((s) => {
+              const on = reminders.includes(s.id);
+              return (
+                <Pressable key={s.id} onPress={() => toggleReminder(s.id)} style={[styles.chip, on && styles.chipOn]}>
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{`${s.label} · ${s.time}`}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.hint}>Scheduled on this device. Delivery uses system notifications in production builds.</Text>
+        </Card>
+      )}
+
+      <Card style={styles.card}>
+        <Text style={styles.section}>Devices</Text>
+        <Text style={styles.hint}>{`${pairedDevices.length} connected`}</Text>
+        <Button label="Manage devices & readings" variant="ghost" onPress={() => navigation.navigate("Devices")} />
       </Card>
 
       <Card style={styles.card}>

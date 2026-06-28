@@ -35,6 +35,7 @@ import {
 } from "../engine/gamification";
 import { ActionDef } from "../data/actions";
 import { GlucoseUnit } from "../lib/units";
+import { DeviceKind } from "../lib/health";
 
 const STORAGE_KEY = "diabetes-quest/v1";
 
@@ -59,11 +60,30 @@ export function initialProfile(): Profile {
   };
 }
 
+/** A device the patient has paired (PRD Vol 2 / Vol 5 device management). */
+export interface PairedDevice {
+  id: string;
+  kind: DeviceKind;
+  name: string;
+  pairedAt: number;
+}
+
+/** A glucose reading (manual entry today; device-sourced once connectors land). */
+export interface Reading {
+  id: string;
+  mgdl: number;
+  atMs: number;
+  source: "manual" | "device";
+}
+
 interface PersistedState {
   body: BodyState;
   progress: ProgressState;
   completedLessons: string[];
   profile?: Profile;
+  pairedDevices?: PairedDevice[];
+  readings?: Reading[];
+  reminders?: string[];
 }
 
 export interface GameContextValue {
@@ -71,6 +91,9 @@ export interface GameContextValue {
   progress: ProgressState;
   completedLessons: string[];
   profile: Profile;
+  pairedDevices: PairedDevice[];
+  readings: Reading[];
+  reminders: string[];
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
@@ -78,6 +101,10 @@ export interface GameContextValue {
   completeOnboarding: (settings: Omit<Profile, "onboarded">) => void;
   /** Update one or more profile fields (Settings). */
   updateProfile: (partial: Partial<Profile>) => void;
+  pairDevice: (kind: DeviceKind, name: string) => void;
+  unpairDevice: (id: string) => void;
+  addReading: (mgdl: number, source: Reading["source"]) => void;
+  toggleReminder: (slotId: string) => void;
   /** Log an action: applies effects, awards XP, advances the day. */
   logAction: (action: ActionDef) => {
     organDelta: Record<OrganKey, number>;
@@ -98,6 +125,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>(initialProgress);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>(initialProfile);
+  const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
+  const [readings, setReadings] = useState<Reading[]>([]);
+  const [reminders, setReminders] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -111,6 +141,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.progress) setProgress(p.progress);
           if (p.completedLessons) setCompletedLessons(p.completedLessons);
           if (p.profile) setProfile({ ...initialProfile(), ...p.profile });
+          if (p.pairedDevices) setPairedDevices(p.pairedDevices);
+          if (p.readings) setReadings(p.readings);
+          if (p.reminders) setReminders(p.reminders);
         }
       } catch {
         // start fresh on any corruption
@@ -123,9 +156,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons, profile };
+    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, profile, ready]);
+  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -217,6 +250,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setProfile((prev) => ({ ...prev, ...partial }));
   }, []);
 
+  const pairDevice = useCallback<GameContextValue["pairDevice"]>((kind, name) => {
+    const id = `${kind}-${Date.now()}`;
+    setPairedDevices((prev) => [...prev, { id, kind, name, pairedAt: Date.now() }]);
+  }, []);
+
+  const unpairDevice = useCallback<GameContextValue["unpairDevice"]>((id) => {
+    setPairedDevices((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+
+  const addReading = useCallback<GameContextValue["addReading"]>((mgdl, source) => {
+    const id = `r-${Date.now()}`;
+    setReadings((prev) => [{ id, mgdl, atMs: Date.now(), source }, ...prev].slice(0, 50));
+  }, []);
+
+  const toggleReminder = useCallback<GameContextValue["toggleReminder"]>((slotId) => {
+    setReminders((prev) => (prev.includes(slotId) ? prev.filter((s) => s !== slotId) : [...prev, slotId]));
+  }, []);
+
   const reset = useCallback(() => {
     setBody(initialBodyState());
     setProgress(initialProgress());
@@ -231,11 +282,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     progress,
     completedLessons,
     profile,
+    pairedDevices,
+    readings,
+    reminders,
     ready,
     level,
     inRangeCount,
     completeOnboarding,
     updateProfile,
+    pairDevice,
+    unpairDevice,
+    addReading,
+    toggleReminder,
     logAction,
     completeLesson,
     reset,

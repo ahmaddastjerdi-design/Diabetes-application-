@@ -46,7 +46,9 @@ educational-only disclaimer). After that:
 | 🏅 Profile | `ProfileScreen` | Badges, level summary, link to **Settings** |
 
 **Settings** (`SettingsScreen`) covers glucose units (mg/dL ↔ mmol/L), condition,
-reminders, and privacy (export / delete). Units flow through `MarkerRow` everywhere.
+reminder times, and privacy (export / delete). Units flow through `MarkerRow` everywhere.
+**Devices** (`DeviceScreen`) handles device pairing, a Health Connect explainer, and
+manual glucose entry with validation + classification.
 
 ## Code map
 

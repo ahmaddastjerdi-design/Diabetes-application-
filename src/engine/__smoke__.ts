@@ -13,6 +13,7 @@ import {
 import { getAction } from "../data/actions";
 import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply } from "../lib/coach";
+import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -71,6 +72,13 @@ expect("formatMarker keeps mg/dL by default", mgdl.unit === "mg/dL" && mgdl.valu
 expect("coach escalates a red-flag emergency", localCoachReply("I have chest pain").tier === "tier3");
 expect("coach hard-blocks dosing questions", localCoachReply("how much insulin should I take").guardrailed === true);
 expect("coach answers an educational question normally", localCoachReply("how does a walk help?").tier === "none");
+
+// Manual device readings: validation + classification (PRD device entry).
+expect("glucose reading 7 mmol/L normalises to ~126 mg/dL", validateGlucoseReading(7, "mmol/L").mgdl === 126);
+expect("implausible glucose reading is rejected", validateGlucoseReading(5, "mg/dL").ok === false);
+expect("a valid mg/dL reading is accepted", validateGlucoseReading(120, "mg/dL").ok === true);
+expect("classifyGlucose flags low / in-range / high",
+  classifyGlucose(60) === "low" && classifyGlucose(120) === "in-range" && classifyGlucose(250) === "high");
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
