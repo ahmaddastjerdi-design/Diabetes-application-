@@ -45,6 +45,7 @@ jobs:
         run: |
           npm run -w @diabetes-quest/backend build:full
           npm run -w @diabetes-quest/device-gateway build:full
+          npm run -w @diabetes-quest/ai-coach build:full
       - name: Device-gateway integration (forwarding)
         run: npm run -w @diabetes-quest/device-gateway test:integration
 

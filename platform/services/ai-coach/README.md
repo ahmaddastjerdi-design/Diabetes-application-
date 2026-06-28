@@ -1,15 +1,40 @@
-# `services/ai-coach` — AI Health Coach (skeleton)
+# `services/ai-coach` — AI Health Coach (Phase 4)
 
-## Implemented in this skeleton
+## Phase 4 — implemented (grounding + escalation + safety eval)
 
-- `src/core/guardrails.ts` — red-flag rules + tiered `classifyMessage`, the dosing hard
-  block (`isDosingRequest`, `DOSING_REFUSAL`). Pure & deterministic for the safety evals.
-- `src/core/provider.ts` — provider-agnostic `CoachModelProvider`, the guardrailed
-  `runCoach` orchestrator (guardrails win over the model), and a `StubCoachProvider`.
-- `src/server.ts` — runnable Fastify entry with a real **Claude** (`@anthropic-ai/sdk`) provider.
+**Domain core** (`src/core/`, pure, strict TS, 11 unit tests):
 
-The core typechecks clean (strict TS). Grounding-context fetch and care-team escalation
-are `TODO(Vol 6)` and built in Phase 4. Run: `npm install && ANTHROPIC_API_KEY=… npm run dev`.
+- `guardrails.ts` — red-flag tiered `classifyMessage` + dosing hard block (`isDosingRequest`).
+- `provider.ts` — provider-agnostic `CoachModelProvider`, the guardrailed `runCoach`
+  orchestrator (guardrails win over the model), `StubCoachProvider`.
+- `context.ts` — `buildGroundingContext`: grounds the coach in the user's OWN markers/
+  organ trends/lessons; empty → coach defers to clinician, never invents numbers.
+- `escalation.ts` — `planEscalation` (tier → audience + care-team notify) and `escalate`.
+- `memory.ts` — bounded short-term window + rolling summary (`compact`) via an injected summarizer.
+- `tools.ts` — the four audited tool definitions the model may call.
+
+**Safety eval** (`src/eval/`, runnable gate):
+
+- `dataset.ts` — labelled corpus (Tier-3/Tier-2 red-flags, dosing, benign).
+- `harness.ts` — `runEval` + `passes`: enforces **≥99% Tier-3 recall, 0 dosing leaks,
+  0 benign false-positives**. The Phase-4 test fails CI if the coach regresses.
+
+**Infra** (`src/infra/`, real, CI-typechecked via `build:full`):
+
+- `context.ts` — fetch grounding data from the backend; `notify.ts` — POST escalations.
+- `src/server.ts` — pipeline per message: fetch grounding → `runCoach` → plan + execute
+  escalation → reply, with the real Claude provider.
+
+```bash
+npm install
+npm test -w @diabetes-quest/ai-coach    # 11 tests incl. the safety eval
+ANTHROPIC_API_KEY=… BACKEND_URL=… npm run dev -w @diabetes-quest/ai-coach
+```
+
+### Still TODO (later work)
+
+The backend `/coach-context` and `/escalations` endpoints, persistent conversation
+memory storage, streaming responses, and the expanded red-team eval corpus.
 
 
 The server-side, **Claude-powered** educational coaching service.
