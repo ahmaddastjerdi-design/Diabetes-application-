@@ -34,12 +34,26 @@ and a *forgiving* streak — see `DESIGN.md` for why punishing streaks backfire)
 
 ## App structure
 
+First run shows an **onboarding/consent** flow (condition type, glucose units, the
+educational-only disclaimer). After that:
+
 | Tab | Screen | Purpose |
 |-----|--------|---------|
 | 🩺 Home | `HomeScreen` | Dashboard: level, streak, organ health, live markers |
 | ➕ Log | `LogScreen` | The core mechanic — log a choice, see the ripple |
 | 📚 Learn | `LearnScreen` | Bite-size lesson quests + a check-question |
-| 🏅 Profile | `ProfileScreen` | Badges, level summary, reset |
+| 🤖 Coach | `CoachScreen` | AI health coach — educational chat with on-device safety guardrails |
+| 🏅 Profile | `ProfileScreen` | Badges, level summary, link to **Settings** |
+
+**Settings** (`SettingsScreen`) covers glucose units (mg/dL ↔ mmol/L), condition,
+reminder times, and privacy (export / delete). Units flow through `MarkerRow` everywhere.
+**Devices** (`DeviceScreen`) handles device pairing, a Health Connect explainer, and
+manual glucose entry with validation + classification.
+
+**Cloud sync** (opt-in, in Settings) records logged choices in an outbox and pushes them
+to the platform backend (`@diabetes-quest/backend`), which derives the official
+progress server-side and returns it (`src/lib/sync.ts`). Off by default — the app is
+fully functional offline; nothing leaves the device until you enable sync.
 
 ## Code map
 
@@ -79,3 +93,12 @@ This is a **working vertical-slice prototype**: the simulation, gamification,
 lessons, and persistence all function end-to-end. It is a foundation to validate
 the concept, not a finished product. See [`DESIGN.md`](./DESIGN.md#roadmap) for
 the roadmap (clinician review, Health Connect integration, real data sync, etc.).
+
+## Full specification suite
+
+The complete, professional specification for evolving this prototype into a
+clinical-grade platform — patient app, clinician web panel, FHIR backend, medical
+device integration, AI Health Coach, and security/compliance — lives in
+[`docs/specification/`](./docs/specification/README.md). It is organised as ten
+volumes with stable, testable requirement IDs and is grounded throughout in the
+code in this repo.

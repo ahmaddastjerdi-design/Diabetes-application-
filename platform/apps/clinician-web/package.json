@@ -1,0 +1,27 @@
+{
+  "name": "@diabetes-quest/clinician-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Diabetes Quest clinician web panel (Vol 3). Vite + React + TypeScript.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@diabetes-quest/shared": "*",
+    "@diabetes-quest/clinical": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "~6.0.3",
+    "vite": "^6.0.0"
+  },
+  "license": "SEE LICENSE IN ../../../LICENSE"
+}

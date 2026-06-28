@@ -8,8 +8,14 @@ import {
   applyActionEffects,
   advanceDay,
   BodyState,
+  MARKERS,
 } from "./physiology";
 import { getAction } from "../data/actions";
+import { formatMarker, mgdlToMmol } from "../lib/units";
+import { localCoachReply, coachReply } from "../lib/coach";
+import { validateGlucoseReading, classifyGlucose } from "../lib/health";
+import { pendingCount, devAuthHeaders } from "../lib/sync";
+import { readingToObservation } from "../lib/fhir";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -57,5 +63,63 @@ expect(
   healthy.organs.heart <= 100 && healthy.organs.kidney <= 100
 );
 
-console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
-process.exit(failures === 0 ? 0 : 1);
+// Glucose unit conversion + formatting (PRD units).
+expect("glucose 140 mg/dL ≈ 7.8 mmol/L", Math.abs(mgdlToMmol(140) - 7.77) < 0.05);
+const mmol = formatMarker(MARKERS.glucose, 140, "mmol/L");
+expect("formatMarker converts glucose to mmol/L", mmol.unit === "mmol/L" && mmol.value === "7.8");
+const mgdl = formatMarker(MARKERS.glucose, 140, "mg/dL");
+expect("formatMarker keeps mg/dL by default", mgdl.unit === "mg/dL" && mgdl.value === "140");
+
+// AI coach safety guardrails (must hold on-device, offline).
+expect("coach escalates a red-flag emergency", localCoachReply("I have chest pain").tier === "tier3");
+expect("coach hard-blocks dosing questions", localCoachReply("how much insulin should I take").guardrailed === true);
+expect("coach answers an educational question normally", localCoachReply("how does a walk help?").tier === "none");
+
+// Manual device readings: validation + classification (PRD device entry).
+expect("glucose reading 7 mmol/L normalises to ~126 mg/dL", validateGlucoseReading(7, "mmol/L").mgdl === 126);
+expect("implausible glucose reading is rejected", validateGlucoseReading(5, "mg/dL").ok === false);
+expect("a valid mg/dL reading is accepted", validateGlucoseReading(120, "mg/dL").ok === true);
+expect("classifyGlucose flags low / in-range / high",
+  classifyGlucose(60) === "low" && classifyGlucose(120) === "in-range" && classifyGlucose(250) === "high");
+
+// Backend sync helpers (PRD local→synced migration).
+expect("pendingCount reflects the outbox size", pendingCount([{ id: "a", event: { type: "lesson_completed", lessonId: "l", passedQuiz: true } }]) === 1);
+const hdrs = devAuthHeaders("p-1");
+expect("dev auth headers carry the patient identity", hdrs["x-user-id"] === "p-1" && hdrs["x-user-role"] === "patient");
+
+// A reading maps to a valid FHIR glucose Observation (synced to the backend).
+const obs = readingToObservation({ id: "r1", mgdl: 137, atMs: Date.parse("2026-06-01T08:00:00Z") }, "p-1");
+expect("reading → FHIR Observation: LOINC glucose, mg/dL, patient subject + identifier",
+  obs.code.coding[0].code === "2339-0" &&
+    obs.valueQuantity.value === 137 &&
+    obs.valueQuantity.unit === "mg/dL" &&
+    obs.subject.reference === "Patient/p-1" &&
+    obs.identifier?.[0].value === "r1");
+
+// Coach orchestration: guardrails must run BEFORE any network call.
+async function runAsyncChecks() {
+  let remoteCalled = false;
+  const blocked = await coachReply("how much insulin should I take", async () => {
+    remoteCalled = true;
+    return "should not be used";
+  });
+  expect("dosing question is guardrailed and never reaches the server", blocked.guardrailed === true && blocked.source === "guardrail" && remoteCalled === false);
+
+  let emergencyRemote = false;
+  const emergency = await coachReply("I have chest pain", async () => {
+    emergencyRemote = true;
+    return "x";
+  });
+  expect("red-flag emergency is guardrailed before the network", emergency.tier === "tier3" && emergencyRemote === false);
+
+  const remote = await coachReply("how does a walk help?", async () => "REMOTE TIP");
+  expect("safe message uses the server coach reply", remote.source === "remote" && remote.text === "REMOTE TIP");
+
+  const fallback = await coachReply("how does a walk help?", async () => null);
+  expect("falls back to a local reply when the server is unavailable", fallback.source === "local");
+}
+
+runAsyncChecks().then(() => {
+  console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
+  process.exit(failures === 0 ? 0 : 1);
+});

@@ -2,6 +2,8 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { MarkerDef, markerStatus } from "../engine/physiology";
+import { useGame } from "../state/GameContext";
+import { formatMarker } from "../lib/units";
 import { Pill } from "./ui";
 import { theme } from "../theme";
 
@@ -12,18 +14,20 @@ export function MarkerRow({
   def: MarkerDef;
   value: number;
 }) {
+  const { profile } = useGame();
   const status = markerStatus(def.key, value);
+  const fmt = formatMarker(def, value, profile.glucoseUnit);
   return (
     <View style={styles.row}>
       <View style={{ flex: 1 }}>
         <Text style={styles.label}>{def.label}</Text>
         <Text style={styles.range}>
-          target {def.healthy[0]}–{def.healthy[1]} {def.unit}
+          target {fmt.low}–{fmt.high} {fmt.unit}
         </Text>
       </View>
       <Text style={styles.value}>
-        {Math.round(value)}
-        <Text style={styles.unit}> {def.unit}</Text>
+        {fmt.value}
+        <Text style={styles.unit}> {fmt.unit}</Text>
       </Text>
       <Pill label={status.label} color={status.color} />
     </View>
