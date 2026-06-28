@@ -13,6 +13,7 @@ import { BodyDiagram } from "../components/BodyDiagram";
 import { OrganDetailSheet } from "../components/OrganDetailSheet";
 import { GoalsCard } from "../components/GoalsCard";
 import { A1cCard } from "../components/A1cCard";
+import { WeeklySummaryCard } from "../components/WeeklySummaryCard";
 import { Card } from "../components/ui";
 import { CountUp, AnimatedBar, FadeIn } from "../components/anim";
 import { getCondition } from "../data/profile";
@@ -100,6 +101,11 @@ export function HomeScreen() {
         {/* Long-term control */}
         <FadeIn delay={90}>
           <A1cCard body={body} />
+        </FadeIn>
+
+        {/* Weekly recap */}
+        <FadeIn delay={100}>
+          <WeeklySummaryCard body={body} />
         </FadeIn>
 
         {/* Real-data activity */}

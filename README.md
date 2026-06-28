@@ -62,6 +62,7 @@ src/
     healthConnect.ts        Lazy, guarded Android Health Connect wrapper
     useHealthConnect.ts     Hook: status, permission, today's steps
     haptics.ts              Guarded expo-haptics wrapper
+    notifications.ts        Guarded local medication reminders
   state/
     GameContext.tsx         Single source of truth, persisted via AsyncStorage
   components/
@@ -73,6 +74,8 @@ src/
     OrganDetailSheet.tsx    Tap an organ → trend, what's affecting it, tips
     GoalsCard.tsx           Today's daily goals (the daily hook)
     A1cCard.tsx             Estimated long-term HbA1c from glucose history
+    WeeklySummaryCard.tsx   Last-7-days recap (organ change, A1c trend, streak)
+    RemindersCard.tsx       Daily medication-reminder settings
     TutorialOverlay.tsx     One-time "how it works" walkthrough
     OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
   screens/                  Onboarding, Home, Log, Learn, Profile
@@ -93,6 +96,11 @@ The app leans on tactile + motion feedback to feel responsive and rewarding:
   for whatever is out of range.
 - **Guided first session** — a one-time, skippable walkthrough frames the core
   loop for new patients (replayable from the Profile tab).
+- **Daily goals & weekly recap** — three resettable daily goals give a once-a-day
+  hook; a "last 7 days" card recaps organ change, A1c trend, and streak.
+- **Medication reminders** (`expo-notifications`) — opt-in daily local reminder
+  that names the patient's meds. Local-only; scheduling is most reliable on an
+  Android development build (it's guarded and degrades gracefully elsewhere).
 - **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
   logging, success/warning buzzes that mirror whether a choice helped or hurt.
 - **Animated everything** (RN `Animated`, no native config): counting numbers,

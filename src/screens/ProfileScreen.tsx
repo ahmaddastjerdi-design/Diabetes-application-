@@ -12,6 +12,7 @@ import {
 } from "../data/profile";
 import { Card, Button, ProgressBar } from "../components/ui";
 import { FadeIn } from "../components/anim";
+import { RemindersCard } from "../components/RemindersCard";
 import * as H from "../services/haptics";
 import { theme } from "../theme";
 
@@ -124,6 +125,10 @@ export function ProfileScreen() {
           </View>
         </View>
       </Card>
+
+      {/* Reminders */}
+      <Text style={styles.h2}>Reminders</Text>
+      <RemindersCard />
 
       <Text style={styles.h2}>Your progress</Text>
 

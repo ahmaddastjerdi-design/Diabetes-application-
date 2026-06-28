@@ -5,7 +5,7 @@
  * Profile (badges). Wrapped in GameProvider so all screens share one persisted
  * game state.
  */
-import React from "react";
+import React, { useEffect } from "react";
 import { Text, View, ActivityIndicator, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,6 +13,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import { tapLight } from "./src/services/haptics";
+import { configureNotifications } from "./src/services/notifications";
 
 import { GameProvider, useGame } from "./src/state/GameContext";
 import { RewardProvider } from "./src/components/RewardLayer";
@@ -92,6 +93,10 @@ function Tabs() {
 }
 
 export default function App() {
+  useEffect(() => {
+    configureNotifications();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <GameProvider>

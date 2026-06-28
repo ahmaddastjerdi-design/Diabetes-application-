@@ -81,6 +81,13 @@ export const MEDICATIONS: MedicationOption[] = [
 
 export const STEP_GOAL_OPTIONS = [4000, 6000, 8000, 10000];
 
+/** Preset reminder times (24h), so we avoid a date-picker dependency. */
+export const REMINDER_TIMES: { label: string; hour: number }[] = [
+  { label: "Morning · 8:00", hour: 8 },
+  { label: "Midday · 13:00", hour: 13 },
+  { label: "Evening · 20:00", hour: 20 },
+];
+
 export interface UserProfile {
   name: string;
   condition: ConditionId;
@@ -90,6 +97,9 @@ export interface UserProfile {
   onboarded: boolean;
   /** Whether the one-time "how it works" walkthrough has been seen. */
   tutorialSeen: boolean;
+  /** Daily medication reminder. */
+  reminderEnabled: boolean;
+  reminderHour: number;
 }
 
 export function defaultProfile(): UserProfile {
@@ -100,5 +110,18 @@ export function defaultProfile(): UserProfile {
     stepGoal: 6000,
     onboarded: false,
     tutorialSeen: false,
+    reminderEnabled: false,
+    reminderHour: 20,
   };
+}
+
+/** Builds the reminder body, naming the patient's meds when known. */
+export function reminderBody(medications: string[]): string {
+  const names = MEDICATIONS.filter((m) => medications.includes(m.id)).map(
+    (m) => m.label
+  );
+  if (names.length === 0) return "Time to take your medication.";
+  if (names.length === 1) return `Time to take your ${names[0]}.`;
+  const last = names.pop();
+  return `Time to take your ${names.join(", ")} and ${last}.`;
 }
