@@ -62,4 +62,27 @@ describe("reconcileAchievements", () => {
     expect(r.earned.streak).toBe("gold");
     expect(r.newly).toHaveLength(1);
   });
+  it("earns every achievement at once when all metrics are maxed", () => {
+    const r = reconcileAchievements(
+      {},
+      ctx({ streak: 30, lessons: 4, daysLogged: 30, heart: 97, kidney: 97 })
+    );
+    expect(r.newly).toHaveLength(ACHIEVEMENTS.length);
+    expect(Object.values(r.earned).every((t) => t === "gold")).toBe(true);
+  });
+});
+
+describe("organ-health achievement tiers", () => {
+  const heartDef = ACHIEVEMENTS.find((a) => a.id === "heart-guardian")!;
+
+  it("tiers at the organ-health thresholds", () => {
+    expect(tierFor(heartDef, 79)).toBeNull();
+    expect(tierFor(heartDef, 80)).toBe("bronze");
+    expect(tierFor(heartDef, 90)).toBe("silver");
+    expect(tierFor(heartDef, 97)).toBe("gold");
+  });
+  it("points at the right next threshold", () => {
+    expect(nextTier(heartDef, null)?.threshold).toBe(80);
+    expect(nextTier(heartDef, "silver")?.threshold).toBe(97);
+  });
 });

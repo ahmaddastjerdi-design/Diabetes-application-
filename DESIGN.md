@@ -147,7 +147,7 @@ Near-term, in rough priority order:
    a slow long-term score.
 6. **Social/relatedness** — opt-in challenges or care-team sharing.
 7. **Accessibility** — large-text and screen-reader passes.
-8. **UI / integration tests** — the pure logic is now covered by Jest (53 tests,
+8. **UI / integration tests** — the pure logic is now covered by Jest (72 tests,
    `npm test`); next is component/interaction testing with a device pass.
 
 ## 5. Safety & scope

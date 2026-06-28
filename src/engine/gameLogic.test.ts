@@ -16,6 +16,7 @@ const initialSlice = (): GameSlice => ({
 
 const walk = getAction("walk")!;
 const sugary = getAction("sugary-drink")!;
+const water = getAction("water")!;
 
 describe("reduceLogAction", () => {
   it("advances the day and awards base XP + first-step badge", () => {
@@ -103,5 +104,25 @@ describe("reduceCompleteLesson", () => {
     );
     expect(second.result.xpGained).toBe(0);
     expect(second.next.completedLessons).toHaveLength(1);
+  });
+});
+
+describe("reduceLogAction — integration edge cases", () => {
+  it("a partial action (water) leaves glucose out, earning only base XP", () => {
+    const { next, result } = reduceLogAction(initialSlice(), water, TODAY);
+    expect(result.xpGained).toBe(XP.logAction); // glucose still out of range
+    expect(next.dailyGoals.done).toHaveLength(0);
+  });
+
+  it("crossing an organ-health threshold earns the gold tier", () => {
+    const slice: GameSlice = {
+      body: { ...initialBodyState(), organs: { heart: 96, kidney: 96 } },
+      progress: initialProgress(),
+      completedLessons: [],
+      dailyGoals: freshGoals(TODAY),
+    };
+    // A walk heals both organs past the gold threshold (97).
+    const { result } = reduceLogAction(slice, walk, TODAY);
+    expect(result.newBadges.map((b) => b.id)).toContain("heart-guardian-gold");
   });
 });

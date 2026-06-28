@@ -23,6 +23,11 @@ describe("levels", () => {
     expect(l.level).toBe(1);
     expect(l.progress).toBeCloseTo(0.5, 1);
   });
+  it("xpForLevel is strictly increasing", () => {
+    for (let lvl = 1; lvl < 8; lvl++) {
+      expect(xpForLevel(lvl + 1)).toBeGreaterThan(xpForLevel(lvl));
+    }
+  });
 });
 
 describe("registerActivity (streak)", () => {
@@ -81,5 +86,26 @@ describe("reconcileBadges", () => {
     const p = { ...initialProgress(), xp: 10, badges: ["first-step"] };
     const r = reconcileBadges(p, ctx({ xp: 10, badges: ["first-step"] }));
     expect(r.newlyEarned.map((b) => b.id)).not.toContain("first-step");
+  });
+  it("awards streak milestones", () => {
+    const p = { ...initialProgress(), xp: 10, streak: 7 };
+    const r = reconcileBadges(p, ctx({ xp: 10, streak: 7 }));
+    const ids = r.newlyEarned.map((b) => b.id);
+    expect(ids).toContain("streak-3");
+    expect(ids).toContain("streak-7");
+  });
+  it("awards the scholar badge after three lessons", () => {
+    const r = reconcileBadges(
+      { ...initialProgress(), xp: 10 },
+      ctx({ xp: 10 }, { lessonsCompleted: 3 })
+    );
+    expect(r.newlyEarned.map((b) => b.id)).toContain("scholar");
+  });
+  it("awards heart-hero when the heart reaches 80", () => {
+    const r = reconcileBadges(
+      { ...initialProgress(), xp: 10 },
+      ctx({ xp: 10 }, { organs: { heart: 80, kidney: 70 } })
+    );
+    expect(r.newlyEarned.map((b) => b.id)).toContain("heart-hero");
   });
 });

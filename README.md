@@ -150,7 +150,7 @@ npm run android       # run on an Android device/emulator via Expo
 
 Pure logic — the simulation engine, gamification, achievements, daily goals, and
 profile helpers — is covered by [Jest](https://jestjs.io/) (`jest-expo` preset).
-53 tests across 6 suites assert the things that actually matter for correctness:
+72 tests across 7 suites assert the things that actually matter for correctness:
 organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
 reconciliation (including "never downgrade an earned tier"), goal reset on a new
 day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).

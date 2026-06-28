@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import {
   MARKERS,
   BodyState,
+  HISTORY_LIMIT,
   baselineMarkers,
   initialBodyState,
   applyActionEffects,
@@ -133,5 +134,39 @@ describe("organInsights", () => {
   it("marks everything in range when markers are healthy", () => {
     const insights = organInsights("kidney", inRangeBody().markers);
     expect(insights.every((i) => i.inRange)).toBe(true);
+  });
+  it("orders multiple out-of-range markers by how far out they are", () => {
+    const markers = { glucose: 300, systolic: 132, hydration: 80, ldl: 110 };
+    const order = organInsights("heart", markers).map((i) => i.marker);
+    expect(order).toEqual(["glucose", "ldl", "systolic"]);
+  });
+});
+
+describe("history cap", () => {
+  it("never grows beyond HISTORY_LIMIT entries", () => {
+    let s = inRangeBody();
+    for (let i = 0; i < HISTORY_LIMIT + 15; i++) s = advanceDay(s).next;
+    expect(s.history.length).toBe(HISTORY_LIMIT);
+    // and it keeps the most recent days
+    expect(s.history[s.history.length - 1].day).toBe(s.day);
+  });
+});
+
+describe("status boundaries", () => {
+  it("organStatus is inclusive at each threshold", () => {
+    expect(organStatus(80).label).toBe("Thriving");
+    expect(organStatus(79).label).toBe("Healthy");
+    expect(organStatus(60).label).toBe("Healthy");
+    expect(organStatus(40).label).toBe("Strained");
+    expect(organStatus(20).label).toBe("At risk");
+    expect(organStatus(0).label).toBe("Critical");
+  });
+  it("a1cStatus bands at the clinical thresholds", () => {
+    expect(a1cStatus(5.6).label).toBe("Normal");
+    expect(a1cStatus(5.7).label).toBe("On target");
+    expect(a1cStatus(6.9).label).toBe("On target");
+    expect(a1cStatus(7.0).label).toBe("Above target");
+    expect(a1cStatus(7.9).label).toBe("Above target");
+    expect(a1cStatus(8.0).label).toBe("High");
   });
 });
