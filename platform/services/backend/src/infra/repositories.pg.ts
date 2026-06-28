@@ -21,6 +21,7 @@ import type { Observation } from "@diabetes-quest/shared";
 import { encryptField, decryptField, type Aead, type KeyRing, type EncryptedField } from "@diabetes-quest/security";
 import { chainHash } from "../core/index.js";
 import { pool } from "./db.js";
+import { sha256Hex } from "./crypto.js";
 
 /** Optional field-encryption config for PHI at rest (Vol 8). When absent, stored plain. */
 export interface FieldEncryption {
@@ -97,7 +98,7 @@ export class PgAuditRepo implements AuditRepo {
       await client.query("BEGIN");
       const { rows } = await client.query("SELECT hash FROM audit_log ORDER BY seq DESC LIMIT 1");
       const prevHash: string | null = rows.length ? rows[0].hash : null;
-      const hash = chainHash(prevHash, entry);
+      const hash = chainHash(prevHash, entry, sha256Hex); // SHA-256 chain in storage (Vol 8)
       const inserted = await client.query(
         "INSERT INTO audit_log (actor_id, action, target, occurred_at, prev_hash, hash) VALUES ($1,$2,$3,$4,$5,$6) RETURNING seq",
         [entry.actorId, entry.action, entry.target, entry.occurredAt, prevHash, hash]

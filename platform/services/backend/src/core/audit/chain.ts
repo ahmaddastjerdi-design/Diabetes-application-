@@ -24,17 +24,20 @@ export interface AuditRecord extends AuditEntry {
 
 const GENESIS = "genesis";
 
+/** Pluggable hash: the model uses djb2; production injects SHA-256 (infra/crypto). */
+export type HashFn = (input: string) => string;
+
 /** Hash an entry together with the previous hash (the chain link). */
-export function chainHash(prevHash: string | null, entry: AuditEntry): string {
+export function chainHash(prevHash: string | null, entry: AuditEntry, hash: HashFn = djb2): string {
   const payload = `${prevHash ?? GENESIS}|${entry.actorId ?? ""}|${entry.action}|${entry.target ?? ""}|${entry.occurredAt}`;
-  return djb2(payload);
+  return hash(payload);
 }
 
 /** Append an entry, returning the new immutable record (does not mutate `log`). */
-export function appendEntry(log: readonly AuditRecord[], entry: AuditEntry): AuditRecord {
+export function appendEntry(log: readonly AuditRecord[], entry: AuditEntry, hash: HashFn = djb2): AuditRecord {
   const prev = log.length > 0 ? log[log.length - 1]! : null;
   const prevHash = prev ? prev.hash : null;
-  return { ...entry, seq: (prev?.seq ?? 0) + 1, prevHash, hash: chainHash(prevHash, entry) };
+  return { ...entry, seq: (prev?.seq ?? 0) + 1, prevHash, hash: chainHash(prevHash, entry, hash) };
 }
 
 export interface ChainVerification {
@@ -43,11 +46,11 @@ export interface ChainVerification {
 }
 
 /** Verify the whole chain is internally consistent and untampered. */
-export function verifyChain(log: readonly AuditRecord[]): ChainVerification {
+export function verifyChain(log: readonly AuditRecord[], hash: HashFn = djb2): ChainVerification {
   let prevHash: string | null = null;
   for (const rec of log) {
     if (rec.prevHash !== prevHash) return { ok: false, brokenAt: rec.seq };
-    if (rec.hash !== chainHash(prevHash, rec)) return { ok: false, brokenAt: rec.seq };
+    if (rec.hash !== chainHash(prevHash, rec, hash)) return { ok: false, brokenAt: rec.seq };
     prevHash = rec.hash;
   }
   return { ok: true, brokenAt: null };

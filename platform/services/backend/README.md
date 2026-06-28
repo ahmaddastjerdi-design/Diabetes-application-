@@ -54,10 +54,16 @@ FHIR payload with AES-256-GCM (`@diabetes-quest/security`) before it touches dis
 decrypts transparently on read. The Postgres integration suite proves the raw row is
 ciphertext (no plaintext glucose on disk) while reads return the original value.
 
+**Audit integrity:** the audit-chain hash is pluggable (`chainHash(prev, entry, hashFn)`);
+`PgAuditRepo` uses **SHA-256** in storage, and the integration suite verifies the stored
+chain under SHA-256 (each hash a 64-char hex digest). The in-memory/model default stays
+djb2 for fast unit tests.
+
 ### Still TODO (later phases)
 
 FHIR facade, Redis, notifications/messaging/reporting, extend field encryption to the
-remaining PHI columns + SHA-256 audit in storage, TLS-to-DB, latency/availability NFRs (Vol 4).
+remaining PHI columns (patients/devices, once their repos exist), TLS-to-DB,
+latency/availability NFRs (Vol 4).
 
 
 The platform's server: identity, profiles, observation ingest, simulation/gamification

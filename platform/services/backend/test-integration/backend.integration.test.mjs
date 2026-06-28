@@ -13,7 +13,7 @@ const DB = process.env.DATABASE_URL;
 
 // Imports resolve against the full build (dist-full). Guarded so the file can be
 // discovered even when skipped.
-const { PatientDataService, AccessDeniedError } = DB ? await import("../dist-full/index.js") : {};
+const { PatientDataService, AccessDeniedError, verifyChain } = DB ? await import("../dist-full/index.js") : {};
 const repos = DB ? await import("../dist-full/infra/repositories.pg.js") : {};
 const crypto = DB ? await import("../dist-full/infra/crypto.js") : {};
 
@@ -57,10 +57,12 @@ run("idempotent sync + consent-gated read persist correctly in Postgres", async 
   await new repos.PgConsentRepo().grant({ patientId: "p1", clinicianId: "c1", status: "active", grantedAt: now - 1 });
   assert.equal((await svc.getProgress(clinician, "p1", now)).xp, 20);
 
-  // the audit chain recorded every decision and is intact
+  // the audit chain recorded every decision and is intact (SHA-256 in storage)
   const log = await new repos.PgAuditRepo().all();
   assert.ok(log.length >= 4);
   assert.ok(log.some((r) => r.action === "read:progress:deny"));
+  assert.equal(verifyChain(log, crypto.sha256Hex).ok, true, "stored audit chain verifies under SHA-256");
+  assert.ok(/^[0-9a-f]{64}$/.test(log[0].hash), "audit hash is a SHA-256 hex digest");
 });
 
 run("observations persist + coach-context derives from real Postgres data", async () => {

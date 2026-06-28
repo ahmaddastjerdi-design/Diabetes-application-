@@ -76,3 +76,16 @@ test("audit chain links records and detects tampering", () => {
   assert.equal(chainHash(null, { actorId: "a", action: "x", target: null, occurredAt: 1 }),
     chainHash(null, { actorId: "a", action: "x", target: null, occurredAt: 1 }));
 });
+
+test("audit chain hash is pluggable (production injects SHA-256)", () => {
+  // a fake injected hasher proves the chain is hash-agnostic; storage uses SHA-256.
+  const fake = (s) => `h(${s.length})`;
+  let log = [];
+  for (const a of ["login", "read"]) {
+    log = [...log, appendEntry(log, { actorId: "c1", action: a, target: null, occurredAt: 5 }, fake)];
+  }
+  assert.equal(verifyChain(log, fake).ok, true);
+  // verifying with the WRONG hasher detects the mismatch
+  assert.equal(verifyChain(log).ok, false);
+  assert.ok(log[0].hash.startsWith("h("));
+});
