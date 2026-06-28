@@ -33,7 +33,7 @@ import {
   reduceLogAction,
   reduceCompleteLesson,
 } from "../engine/gameLogic";
-import { ActionDef, stepsToAction } from "../data/actions";
+import { ActionDef, stepsToAction, readingToAction } from "../data/actions";
 import { UserProfile, defaultProfile } from "../data/profile";
 import { DailyGoalsState, freshGoals, todayKey } from "../data/goals";
 
@@ -65,6 +65,8 @@ export interface GameContextValue {
   stepsSyncedToday: boolean;
   /** Log an action: applies effects, awards XP, advances the day. */
   logAction: (action: ActionDef) => LogResult;
+  /** Log a measured reading (glucose / blood pressure) for today. */
+  logReading: (marker: MarkerKey, value: number) => LogResult;
   /** Apply real Health Connect steps to the current day (once per sim-day). */
   logSteps: (steps: number) => LogResult | null;
   completeLesson: (lessonId: string, passedQuiz: boolean) => LessonResult;
@@ -182,6 +184,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     [body, progress, completedLessons, dailyGoals]
   );
 
+  const logReading = useCallback<GameContextValue["logReading"]>(
+    (marker, value) => logAction(readingToAction(marker, value)),
+    [logAction]
+  );
+
   const stepsSyncedToday = lastStepSyncDay === body.day;
 
   const logSteps = useCallback<GameContextValue["logSteps"]>(
@@ -243,6 +250,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     goalsToday,
     stepsSyncedToday,
     logAction,
+    logReading,
     logSteps,
     completeLesson,
     saveProfile,

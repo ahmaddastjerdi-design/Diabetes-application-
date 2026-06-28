@@ -5,7 +5,7 @@
  * `teach` line explaining the mechanism. Effect magnitudes are illustrative and
  * tuned for clear, learnable feedback — not clinical precision.
  */
-import { MarkerKey } from "../engine/physiology";
+import { MarkerKey, MARKERS } from "../engine/physiology";
 
 export type ActionCategory = "diet" | "exercise" | "drug";
 
@@ -99,6 +99,14 @@ export const ACTIONS: ActionDef[] = [
     teach: "Metformin lowers the glucose your liver releases.",
   },
   {
+    id: "insulin",
+    category: "drug",
+    label: "Took insulin",
+    emoji: "💉",
+    effects: { glucose: -40 },
+    teach: "Insulin moves glucose out of your blood into your cells.",
+  },
+  {
     id: "bp-med",
     category: "drug",
     label: "Took BP medicine",
@@ -141,6 +149,28 @@ export const CATEGORY_META: Record<
 
 export function getAction(id: string): ActionDef | undefined {
   return ACTIONS.find((a) => a.id === id);
+}
+
+/**
+ * Build an action from a real measured reading (e.g. a glucometer or BP cuff).
+ * The day starts from baseline, so we set the effect so the marker lands exactly
+ * on the measured `value`, then the day is scored on that real number.
+ */
+export function readingToAction(marker: MarkerKey, value: number): ActionDef {
+  const def = MARKERS[marker];
+  const labels: Partial<Record<MarkerKey, { label: string; emoji: string }>> = {
+    glucose: { label: "Blood sugar", emoji: "🩸" },
+    systolic: { label: "Blood pressure", emoji: "🩺" },
+  };
+  const meta = labels[marker] ?? { label: def.label, emoji: "📋" };
+  return {
+    id: `reading-${marker}`,
+    category: "drug", // internal: entered via the readings UI, not the tile grid
+    label: `${meta.label}: ${value}`,
+    emoji: meta.emoji,
+    effects: { [marker]: value - def.baseline },
+    teach: `You logged your ${def.label.toLowerCase()} at ${value} ${def.unit}.`,
+  };
 }
 
 /**

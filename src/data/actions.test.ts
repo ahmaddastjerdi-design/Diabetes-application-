@@ -4,7 +4,9 @@ import {
   ACTIONS_BY_CATEGORY,
   getAction,
   stepsToAction,
+  readingToAction,
 } from "./actions";
+import { MARKERS } from "../engine/physiology";
 
 describe("getAction", () => {
   it("finds a known action and returns undefined otherwise", () => {
@@ -44,5 +46,18 @@ describe("stepsToAction", () => {
     const a = stepsToAction(0);
     expect(Math.abs(a.effects.glucose ?? NaN)).toBe(0);
     expect(Math.abs(a.effects.systolic ?? NaN)).toBe(0);
+  });
+});
+
+describe("readingToAction", () => {
+  it("sets the effect so the marker lands on the measured value", () => {
+    const a = readingToAction("glucose", 110);
+    // baseline + effect === measured value
+    expect(MARKERS.glucose.baseline + (a.effects.glucose ?? 0)).toBe(110);
+    expect(a.label).toContain("110");
+  });
+  it("works for blood pressure too", () => {
+    const a = readingToAction("systolic", 145);
+    expect(MARKERS.systolic.baseline + (a.effects.systolic ?? 0)).toBe(145);
   });
 });

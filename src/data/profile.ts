@@ -64,6 +64,13 @@ export const MEDICATIONS: MedicationOption[] = [
     controls: "blood glucose",
   },
   {
+    id: "insulin",
+    actionId: "insulin",
+    label: "Insulin",
+    emoji: "💉",
+    controls: "blood glucose",
+  },
+  {
     id: "bp-med",
     actionId: "bp-med",
     label: "Blood-pressure pill",

@@ -1,6 +1,13 @@
 /** LogScreen.tsx — the core mechanic: log a daily action and see the impact. */
 import React, { useState } from "react";
-import { ScrollView, View, Text, StyleSheet, Pressable } from "react-native";
+import {
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  TextInput,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../state/GameContext";
 import {
@@ -8,10 +15,11 @@ import {
   CATEGORY_META,
   ActionCategory,
   ActionDef,
+  readingToAction,
 } from "../data/actions";
-import { OrganKey } from "../engine/physiology";
+import { OrganKey, MarkerKey, MARKERS } from "../engine/physiology";
 import { BadgeDef } from "../engine/gamification";
-import { Card } from "../components/ui";
+import { Card, Button } from "../components/ui";
 import { Pop } from "../components/anim";
 import { CausalChain } from "../components/CausalChain";
 import { useReward } from "../components/RewardLayer";
@@ -30,6 +38,8 @@ export function LogScreen() {
   const { celebrate } = useReward();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [popKey, setPopKey] = useState(0);
+  const [glucoseInput, setGlucoseInput] = useState("");
+  const [bpInput, setBpInput] = useState("");
 
   const onLog = (action: ActionDef) => {
     const res = logAction(action);
@@ -46,6 +56,18 @@ export function LogScreen() {
 
     // XP toast + badge / level-up celebration.
     celebrate(res);
+  };
+
+  // Log a typed-in measurement (glucose / blood pressure).
+  const onLogReading = (marker: MarkerKey, raw: string, clear: () => void) => {
+    const value = parseInt(raw, 10);
+    const [lo, hi] = MARKERS[marker].clamp;
+    if (!Number.isFinite(value) || value < lo || value > hi) {
+      H.notifyWarning();
+      return; // ignore empty / out-of-bounds input
+    }
+    onLog(readingToAction(marker, value));
+    clear();
   };
 
   // Personalize the medication tiles to the patient's own meds. "Missed my
@@ -74,6 +96,30 @@ export function LogScreen() {
           <FeedbackCard key={popKey} fb={feedback} />
         </Pop>
       )}
+
+      {/* Enter measured readings */}
+      <Card style={styles.readings}>
+        <Text style={styles.readingsTitle}>📋 Enter a reading</Text>
+        <Text style={styles.readingsHint}>
+          Type a measured value from your glucometer or BP cuff.
+        </Text>
+        <ReadingRow
+          label="Blood sugar"
+          unit="mg/dL"
+          value={glucoseInput}
+          onChange={setGlucoseInput}
+          onSave={() =>
+            onLogReading("glucose", glucoseInput, () => setGlucoseInput(""))
+          }
+        />
+        <ReadingRow
+          label="Blood pressure"
+          unit="mmHg (top number)"
+          value={bpInput}
+          onChange={setBpInput}
+          onSave={() => onLogReading("systolic", bpInput, () => setBpInput(""))}
+        />
+      </Card>
 
       {(Object.keys(ACTIONS_BY_CATEGORY) as ActionCategory[]).map((cat) => (
         <View key={cat} style={{ gap: theme.space(2) }}>
@@ -105,6 +151,42 @@ export function LogScreen() {
   );
 }
 
+function ReadingRow({
+  label,
+  unit,
+  value,
+  onChange,
+  onSave,
+}: {
+  label: string;
+  unit: string;
+  value: string;
+  onChange: (t: string) => void;
+  onSave: () => void;
+}) {
+  return (
+    <View style={styles.readingRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.readingLabel}>{label}</Text>
+        <Text style={styles.readingUnit}>{unit}</Text>
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={(t) => onChange(t.replace(/[^0-9]/g, ""))}
+        keyboardType="number-pad"
+        placeholder="–"
+        placeholderTextColor={theme.colors.subtext}
+        style={styles.readingInput}
+        maxLength={3}
+        accessibilityLabel={`${label} value`}
+      />
+      <View style={styles.readingBtn}>
+        <Button label="Log" onPress={onSave} disabled={value.length === 0} />
+      </View>
+    </View>
+  );
+}
+
 function FeedbackCard({ fb }: { fb: Feedback }) {
   return (
     <Card style={styles.feedback}>
@@ -124,6 +206,33 @@ const styles = StyleSheet.create({
   h1: { fontSize: 26, fontWeight: "800", color: theme.colors.text },
   subtitle: { fontSize: 14, color: theme.colors.subtext, marginTop: -8 },
   h2: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
+  readings: { gap: theme.space(2) },
+  readingsTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.text },
+  readingsHint: {
+    fontSize: 12,
+    color: theme.colors.subtext,
+    marginTop: -theme.space(1),
+  },
+  readingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.space(2.5),
+  },
+  readingLabel: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+  readingUnit: { fontSize: 11, color: theme.colors.subtext, marginTop: 1 },
+  readingInput: {
+    width: 64,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingVertical: theme.space(2),
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "700",
+    color: theme.colors.text,
+    backgroundColor: "#fff",
+  },
+  readingBtn: { width: 84 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: theme.space(2.5) },
   tile: {
     backgroundColor: theme.colors.card,
