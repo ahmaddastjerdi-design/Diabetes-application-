@@ -12,7 +12,7 @@ import {
 } from "./physiology";
 import { getAction } from "../data/actions";
 import { formatMarker, mgdlToMmol } from "../lib/units";
-import { localCoachReply } from "../lib/coach";
+import { localCoachReply, coachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
 import { readingToObservation } from "../lib/fhir";
@@ -96,5 +96,30 @@ expect("reading → FHIR Observation: LOINC glucose, mg/dL, patient subject + id
     obs.subject.reference === "Patient/p-1" &&
     obs.identifier?.[0].value === "r1");
 
-console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
-process.exit(failures === 0 ? 0 : 1);
+// Coach orchestration: guardrails must run BEFORE any network call.
+async function runAsyncChecks() {
+  let remoteCalled = false;
+  const blocked = await coachReply("how much insulin should I take", async () => {
+    remoteCalled = true;
+    return "should not be used";
+  });
+  expect("dosing question is guardrailed and never reaches the server", blocked.guardrailed === true && blocked.source === "guardrail" && remoteCalled === false);
+
+  let emergencyRemote = false;
+  const emergency = await coachReply("I have chest pain", async () => {
+    emergencyRemote = true;
+    return "x";
+  });
+  expect("red-flag emergency is guardrailed before the network", emergency.tier === "tier3" && emergencyRemote === false);
+
+  const remote = await coachReply("how does a walk help?", async () => "REMOTE TIP");
+  expect("safe message uses the server coach reply", remote.source === "remote" && remote.text === "REMOTE TIP");
+
+  const fallback = await coachReply("how does a walk help?", async () => null);
+  expect("falls back to a local reply when the server is unavailable", fallback.source === "local");
+}
+
+runAsyncChecks().then(() => {
+  console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILED`);
+  process.exit(failures === 0 ? 0 : 1);
+});

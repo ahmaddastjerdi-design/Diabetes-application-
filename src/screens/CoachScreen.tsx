@@ -15,7 +15,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { localCoachReply, CoachTier } from "../lib/coach";
+import { coachReply, CoachTier, RemoteFetcher } from "../lib/coach";
+import { useGame } from "../state/GameContext";
 import { theme } from "../theme";
 
 interface Message {
@@ -33,19 +34,40 @@ const GREETING: Message = {
 };
 
 export function CoachScreen() {
+  const { profile } = useGame();
   const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<ScrollView>(null);
   const nextId = useRef(1);
 
-  const send = () => {
+  // Only used on the SAFE path — guardrails in coachReply run before this is ever called.
+  const remote: RemoteFetcher | undefined = profile.syncEnabled && profile.backendUrl
+    ? async (message) => {
+        try {
+          const res = await fetch(`${profile.backendUrl.replace(/\/+$/, "")}/v1/coach/message`, {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-user-id": profile.patientId, "x-user-role": "patient" },
+            body: JSON.stringify({ userId: profile.patientId, message }),
+          });
+          if (!res.ok) return null;
+          const data = (await res.json()) as { text?: string };
+          return typeof data.text === "string" ? data.text : null;
+        } catch {
+          return null;
+        }
+      }
+    : undefined;
+
+  const send = async () => {
     const text = input.trim();
     if (!text) return;
     const userMsg: Message = { id: nextId.current++, role: "user", text, tier: "none" };
-    const reply = localCoachReply(text);
-    const coachMsg: Message = { id: nextId.current++, role: "coach", text: reply.text, tier: reply.tier };
-    setMessages((prev) => [...prev, userMsg, coachMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    const reply = await coachReply(text, remote);
+    const coachMsg: Message = { id: nextId.current++, role: "coach", text: reply.text, tier: reply.tier };
+    setMessages((prev) => [...prev, coachMsg]);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   };
 

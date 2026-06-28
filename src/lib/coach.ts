@@ -57,7 +57,7 @@ function educationalReply(message: string): string {
   return "I'm here to help you understand your choices and stay motivated. For anything about your specific treatment, your care team is the right place. What would you like to learn about?";
 }
 
-/** The single safe entry point for a coach reply. */
+/** The single safe entry point for a fully-local coach reply. */
 export function localCoachReply(message: string): CoachReply {
   const text = message.toLowerCase();
   for (const tier of ["tier3", "tier2"] as const) {
@@ -66,4 +66,30 @@ export function localCoachReply(message: string): CoachReply {
   }
   if (DOSING.test(text) && MED.test(text)) return { text: DOSING_REFUSAL, tier: "none", guardrailed: true };
   return { text: educationalReply(message), tier: "none", guardrailed: false };
+}
+
+/** Fetches a reply from the server coach; returns null if unavailable. */
+export type RemoteFetcher = (message: string) => Promise<string | null>;
+
+export interface CoachReplyFull extends CoachReply {
+  source: "guardrail" | "remote" | "local";
+}
+
+/**
+ * Orchestrated reply: on-device guardrails ALWAYS run first, so red-flag emergencies and
+ * dosing questions are blocked BEFORE any network call. Only safe messages may reach the
+ * server coach; if it's unavailable we fall back to a local educational reply.
+ */
+export async function coachReply(message: string, remote?: RemoteFetcher): Promise<CoachReplyFull> {
+  const text = message.toLowerCase();
+  for (const tier of ["tier3", "tier2"] as const) {
+    const hit = RED_FLAGS.find((r) => r.tier === tier && r.triggers.some((t) => text.includes(t)));
+    if (hit) return { text: hit.message, tier: hit.tier, guardrailed: true, source: "guardrail" };
+  }
+  if (DOSING.test(text) && MED.test(text)) return { text: DOSING_REFUSAL, tier: "none", guardrailed: true, source: "guardrail" };
+  if (remote) {
+    const r = await remote(message);
+    if (r) return { text: r, tier: "none", guardrailed: false, source: "remote" };
+  }
+  return { text: educationalReply(message), tier: "none", guardrailed: false, source: "local" };
 }
