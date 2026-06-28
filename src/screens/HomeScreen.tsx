@@ -6,11 +6,15 @@ import { MARKERS, MarkerKey, ORGANS, OrganKey } from "../engine/physiology";
 import { levelFromXp, xpForLevel } from "../engine/gamification";
 import { OrganCard } from "../components/OrganCard";
 import { MarkerRow } from "../components/MarkerRow";
+import { ActivityCard } from "../components/ActivityCard";
 import { Card, ProgressBar } from "../components/ui";
+import { getCondition } from "../data/profile";
 import { theme } from "../theme";
 
 export function HomeScreen() {
-  const { body, progress, level, inRangeCount } = useGame();
+  const { body, progress, level, inRangeCount, profile } = useGame();
+  const condition = getCondition(profile.condition);
+  const name = profile.name.trim();
 
   return (
     <ScrollView
@@ -18,8 +22,12 @@ export function HomeScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.h1}>Your body today</Text>
-      <Text style={styles.subtitle}>Day {body.day} of your journey</Text>
+      <Text style={styles.h1}>
+        {name ? `Hi ${name} 👋` : "Your body today"}
+      </Text>
+      <Text style={styles.subtitle}>
+        {condition.emoji} {condition.label} · Day {body.day} of your journey
+      </Text>
 
       {/* Level + streak header */}
       <Card style={styles.statsCard}>
@@ -49,6 +57,9 @@ export function HomeScreen() {
           </Text>
         </View>
       </Card>
+
+      {/* Real-data activity */}
+      <ActivityCard />
 
       {/* Organs */}
       <Text style={styles.h2}>Your organs</Text>

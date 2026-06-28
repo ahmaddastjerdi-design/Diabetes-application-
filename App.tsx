@@ -17,6 +17,7 @@ import { HomeScreen } from "./src/screens/HomeScreen";
 import { LogScreen } from "./src/screens/LogScreen";
 import { LearnScreen } from "./src/screens/LearnScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { theme } from "./src/theme";
 
 const Tab = createBottomTabNavigator();
@@ -28,8 +29,8 @@ const TAB_ICON: Record<string, string> = {
   Profile: "🏅",
 };
 
-function Tabs() {
-  const { ready } = useGame();
+function Root() {
+  const { ready, profile } = useGame();
 
   if (!ready) {
     return (
@@ -40,6 +41,14 @@ function Tabs() {
     );
   }
 
+  if (!profile.onboarded) {
+    return <OnboardingScreen />;
+  }
+
+  return <Tabs />;
+}
+
+function Tabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -75,7 +84,7 @@ export default function App() {
       <GameProvider>
         <NavigationContainer>
           <StatusBar style="dark" />
-          <Tabs />
+          <Root />
         </NavigationContainer>
       </GameProvider>
     </SafeAreaProvider>

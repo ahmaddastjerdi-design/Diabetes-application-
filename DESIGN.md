@@ -116,20 +116,30 @@ Deliberate choices from the evidence:
 
 ## 4. Roadmap
 
+Done:
+
+- ✅ **Onboarding & personalization** — name, condition, current medications, and
+  a self-chosen step goal (`screens/OnboardingScreen.tsx`, `data/profile.ts`).
+  Medications tailor the Log screen; condition/name personalize copy; everything
+  is editable later on the Profile screen.
+- ✅ **Real data via Health Connect (Android)** — `services/healthConnect.ts`
+  reads today's steps and `ActivityCard` applies them to the simulation
+  (lazy-loaded + guarded so the app runs without a dev build too).
+
 Near-term, in rough priority order:
 
 1. **Clinician content review** — every lesson and effect magnitude reviewed for
    accuracy and safe framing before any real-world pilot.
-2. **Onboarding & personalization** — condition type, current meds, food/culture
-   and language options (a top differentiator in the literature).
-3. **Real data via Health Connect (Android)** — auto-log steps/activity so the
-   simulation reflects real behavior, not just self-report.
+2. **Background step sync & auto-apply** — read steps on launch/resume and offer
+   to apply without a manual tap; add distance/active-calorie records.
+3. **Localization** — food/culture and language options (a top differentiator in
+   the literature), building on the personalization profile.
 4. **Medication reminders** — adherence is a proven lever; pair with the
-   "missed dose" mechanic already modeled.
+   "missed dose" mechanic already modeled and the meds captured at onboarding.
 5. **More organs & markers** — eyes (retinopathy), nerves (neuropathy), HbA1c as
    a slow long-term score.
 6. **Social/relatedness** — opt-in challenges or care-team sharing.
-7. **Accessibility & localization** — large-text, screen-reader, and multi-language.
+7. **Accessibility** — large-text and screen-reader passes.
 8. **Automated tests** — promote the smoke checks into a Jest suite; add UI tests.
 
 ## 5. Safety & scope

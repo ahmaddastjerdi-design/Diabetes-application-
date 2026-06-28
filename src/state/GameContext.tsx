@@ -33,33 +33,47 @@ import {
   reconcileBadges,
   registerActivity,
 } from "../engine/gamification";
-import { ActionDef } from "../data/actions";
+import { ActionDef, stepsToAction } from "../data/actions";
+import { UserProfile, defaultProfile } from "../data/profile";
 
 const STORAGE_KEY = "diabetes-quest/v1";
 
 interface PersistedState {
+  version?: number;
   body: BodyState;
   progress: ProgressState;
   completedLessons: string[];
+  profile?: UserProfile;
+  lastStepSyncDay?: number;
+}
+
+export interface LogResult {
+  organDelta: Record<OrganKey, number>;
+  newBadges: BadgeDef[];
+  xpGained: number;
 }
 
 export interface GameContextValue {
   body: BodyState;
   progress: ProgressState;
   completedLessons: string[];
+  profile: UserProfile;
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
+  /** True once steps have been synced into the current simulated day. */
+  stepsSyncedToday: boolean;
   /** Log an action: applies effects, awards XP, advances the day. */
-  logAction: (action: ActionDef) => {
-    organDelta: Record<OrganKey, number>;
-    newBadges: BadgeDef[];
-    xpGained: number;
-  };
+  logAction: (action: ActionDef) => LogResult;
+  /** Apply real Health Connect steps to the current day (once per sim-day). */
+  logSteps: (steps: number) => LogResult | null;
   completeLesson: (lessonId: string, passedQuiz: boolean) => {
     newBadges: BadgeDef[];
     xpGained: number;
   };
+  /** Persist the onboarding profile (also flips `onboarded` true). */
+  saveProfile: (profile: UserProfile) => void;
+  updateProfile: (partial: Partial<UserProfile>) => void;
   reset: () => void;
 }
 
@@ -69,6 +83,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [body, setBody] = useState<BodyState>(initialBodyState);
   const [progress, setProgress] = useState<ProgressState>(initialProgress);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [profile, setProfile] = useState<UserProfile>(defaultProfile);
+  const [lastStepSyncDay, setLastStepSyncDay] = useState<number>(-1);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -81,6 +97,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.body) setBody(p.body);
           if (p.progress) setProgress(p.progress);
           if (p.completedLessons) setCompletedLessons(p.completedLessons);
+          // Migration: pre-onboarding saves have no profile -> stays default
+          // (onboarded:false), so returning users see onboarding once.
+          if (p.profile) setProfile(p.profile);
+          if (typeof p.lastStepSyncDay === "number")
+            setLastStepSyncDay(p.lastStepSyncDay);
         }
       } catch {
         // start fresh on any corruption
@@ -93,9 +114,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons };
+    const payload: PersistedState = {
+      version: 2,
+      body,
+      progress,
+      completedLessons,
+      profile,
+      lastStepSyncDay,
+    };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, ready]);
+  }, [body, progress, completedLessons, profile, lastStepSyncDay, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -151,6 +179,28 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     [body, progress, completedLessons.length, badgeCtx]
   );
 
+  const stepsSyncedToday = lastStepSyncDay === body.day;
+
+  const logSteps = useCallback<GameContextValue["logSteps"]>(
+    (steps) => {
+      if (lastStepSyncDay === body.day) return null; // already synced this day
+      const result = logAction(stepsToAction(steps));
+      // logAction advanced the day by one; mark that new day as synced.
+      setLastStepSyncDay(body.day + 1);
+      return result;
+    },
+    [logAction, lastStepSyncDay, body.day]
+  );
+
+  const saveProfile = useCallback<GameContextValue["saveProfile"]>((p) => {
+    setProfile({ ...p, onboarded: true });
+  }, []);
+
+  const updateProfile = useCallback<GameContextValue["updateProfile"]>(
+    (partial) => setProfile((prev) => ({ ...prev, ...partial })),
+    []
+  );
+
   const completeLesson = useCallback<GameContextValue["completeLesson"]>(
     (lessonId, passedQuiz) => {
       const already = completedLessons.includes(lessonId);
@@ -180,9 +230,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
 
   const reset = useCallback(() => {
+    // Resets the journey but keeps the patient's onboarding profile.
     setBody(initialBodyState());
     setProgress(initialProgress());
     setCompletedLessons([]);
+    setLastStepSyncDay(-1);
   }, []);
 
   const level = useMemo(() => levelFromXp(progress.xp), [progress.xp]);
@@ -191,11 +243,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     body,
     progress,
     completedLessons,
+    profile,
     ready,
     level,
     inRangeCount,
+    stepsSyncedToday,
     logAction,
+    logSteps,
     completeLesson,
+    saveProfile,
+    updateProfile,
     reset,
   };
 

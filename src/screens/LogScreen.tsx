@@ -21,12 +21,22 @@ interface Feedback {
 }
 
 export function LogScreen() {
-  const { logAction } = useGame();
+  const { logAction, profile } = useGame();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const onLog = (action: ActionDef) => {
     const res = logAction(action);
     setFeedback({ action, ...res });
+  };
+
+  // Personalize the medication tiles to the patient's own meds. "Missed my
+  // medicine" only makes sense if they take any. Other categories are unchanged.
+  const actionsFor = (cat: ActionCategory): ActionDef[] => {
+    if (cat !== "drug") return ACTIONS_BY_CATEGORY[cat];
+    if (profile.medications.length === 0) return ACTIONS_BY_CATEGORY[cat];
+    return ACTIONS_BY_CATEGORY.drug.filter(
+      (a) => profile.medications.includes(a.id) || a.id === "missed-meds"
+    );
   };
 
   return (
@@ -48,7 +58,7 @@ export function LogScreen() {
             {CATEGORY_META[cat].emoji} {CATEGORY_META[cat].label}
           </Text>
           <View style={styles.grid}>
-            {ACTIONS_BY_CATEGORY[cat].map((a) => (
+            {actionsFor(cat).map((a) => (
               <Pressable
                 key={a.id}
                 onPress={() => onLog(a)}

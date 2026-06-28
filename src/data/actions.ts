@@ -142,3 +142,22 @@ export const CATEGORY_META: Record<
 export function getAction(id: string): ActionDef | undefined {
   return ACTIONS.find((a) => a.id === id);
 }
+
+/**
+ * Build a synthetic action from a real Health Connect step count. More steps =
+ * a bigger glucose/blood-pressure benefit, capped so a single day can't swing
+ * the model unrealistically (mirrors a brisk walk at the high end).
+ */
+export function stepsToAction(steps: number): ActionDef {
+  const glucose = -Math.min(35, Math.round(steps / 180));
+  const systolic = -Math.min(12, Math.round(steps / 600));
+  return {
+    id: "health-steps",
+    category: "exercise",
+    label: `${steps.toLocaleString()} steps today`,
+    emoji: "👟",
+    effects: { glucose, systolic },
+    teach:
+      "Real steps from Health Connect — movement burns glucose and eases blood pressure.",
+  };
+}

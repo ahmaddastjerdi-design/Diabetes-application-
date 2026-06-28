@@ -1,20 +1,38 @@
-/** ProfileScreen.tsx — badges, level summary, and a reset for testing. */
+/** ProfileScreen.tsx — personalization, badges, level summary, and reset. */
 import React from "react";
-import { ScrollView, View, Text, StyleSheet, Alert } from "react-native";
+import { ScrollView, View, Text, StyleSheet, Alert, Pressable } from "react-native";
 import { useGame } from "../state/GameContext";
 import { BADGES } from "../engine/gamification";
+import {
+  CONDITIONS,
+  MEDICATIONS,
+  STEP_GOAL_OPTIONS,
+  ConditionId,
+} from "../data/profile";
 import { Card, Button, ProgressBar } from "../components/ui";
 import { theme } from "../theme";
 
 export function ProfileScreen() {
-  const { progress, level, completedLessons, reset } = useGame();
+  const { progress, level, completedLessons, profile, updateProfile, reset } =
+    useGame();
   const owned = new Set(progress.badges);
 
+  const toggleMed = (id: string) =>
+    updateProfile({
+      medications: profile.medications.includes(id)
+        ? profile.medications.filter((m) => m !== id)
+        : [...profile.medications, id],
+    });
+
   const confirmReset = () =>
-    Alert.alert("Reset progress?", "This clears all your journey data.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Reset", style: "destructive", onPress: reset },
-    ]);
+    Alert.alert(
+      "Reset progress?",
+      "This clears your journey data but keeps your profile.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Reset", style: "destructive", onPress: reset },
+      ]
+    );
 
   return (
     <ScrollView
@@ -22,7 +40,77 @@ export function ProfileScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.h1}>Your progress</Text>
+      <Text style={styles.h1}>
+        {profile.name.trim() ? `${profile.name.trim()}'s profile` : "Your progress"}
+      </Text>
+
+      {/* Personalization */}
+      <Text style={styles.h2}>Personalization</Text>
+      <Card style={{ gap: theme.space(3) }}>
+        <View>
+          <Text style={styles.fieldLabel}>Condition</Text>
+          <View style={styles.chipRow}>
+            {CONDITIONS.map((c) => {
+              const sel = profile.condition === c.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() =>
+                    updateProfile({ condition: c.id as ConditionId })
+                  }
+                  style={[styles.chip, sel && styles.chipSel]}
+                >
+                  <Text style={[styles.chipText, sel && { color: "#fff" }]}>
+                    {c.emoji} {c.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View>
+          <Text style={styles.fieldLabel}>Medications</Text>
+          <View style={styles.chipRow}>
+            {MEDICATIONS.map((m) => {
+              const sel = profile.medications.includes(m.id);
+              return (
+                <Pressable
+                  key={m.id}
+                  onPress={() => toggleMed(m.id)}
+                  style={[styles.chip, sel && styles.chipSel]}
+                >
+                  <Text style={[styles.chipText, sel && { color: "#fff" }]}>
+                    {m.emoji} {m.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View>
+          <Text style={styles.fieldLabel}>Daily step goal</Text>
+          <View style={styles.chipRow}>
+            {STEP_GOAL_OPTIONS.map((g) => {
+              const sel = profile.stepGoal === g;
+              return (
+                <Pressable
+                  key={g}
+                  onPress={() => updateProfile({ stepGoal: g })}
+                  style={[styles.chip, sel && styles.chipSel]}
+                >
+                  <Text style={[styles.chipText, sel && { color: "#fff" }]}>
+                    {g.toLocaleString()}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Card>
+
+      <Text style={styles.h2}>Your progress</Text>
 
       <Card style={{ gap: theme.space(2) }}>
         <Text style={styles.level}>Level {level.level}</Text>
@@ -78,6 +166,26 @@ const styles = StyleSheet.create({
     marginTop: theme.space(2),
   },
   level: { fontSize: 22, fontWeight: "800", color: theme.colors.text },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: theme.colors.subtext,
+    marginBottom: theme.space(2),
+  },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: theme.space(2) },
+  chip: {
+    paddingVertical: theme.space(2),
+    paddingHorizontal: theme.space(3),
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    backgroundColor: "#fff",
+  },
+  chipSel: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  chipText: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",

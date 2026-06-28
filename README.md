@@ -34,31 +34,52 @@ and a *forgiving* streak — see `DESIGN.md` for why punishing streaks backfire)
 
 ## App structure
 
+A one-time **onboarding flow** personalizes the experience (name, condition,
+medications, daily step goal) and offers to connect **Android Health Connect** so
+real steps feed the simulation.
+
 | Tab | Screen | Purpose |
 |-----|--------|---------|
-| 🩺 Home | `HomeScreen` | Dashboard: level, streak, organ health, live markers |
-| ➕ Log | `LogScreen` | The core mechanic — log a choice, see the ripple |
+| 🩺 Home | `HomeScreen` | Personalized greeting, real step activity, organ health, live markers |
+| ➕ Log | `LogScreen` | The core mechanic — log a choice (meds tailored to you), see the ripple |
 | 📚 Learn | `LearnScreen` | Bite-size lesson quests + a check-question |
-| 🏅 Profile | `ProfileScreen` | Badges, level summary, reset |
+| 🏅 Profile | `ProfileScreen` | Edit personalization, badges, level summary, reset |
 
 ## Code map
 
 ```
-App.tsx                     Navigation root (bottom tabs) + providers
+App.tsx                     Navigation root + onboarding gate + providers
 src/
   engine/
     physiology.ts           Organ-impact simulation (markers → organs)
     gamification.ts         XP, levels, badges, forgiving streak (SDT-based)
     __smoke__.ts            Runtime sanity checks for the engine
   data/
-    actions.ts              Catalog of loggable diet/exercise/drug actions
+    actions.ts              Loggable diet/exercise/drug actions (+ steps→action)
     lessons.ts              Education quests + quizzes
+    profile.ts              Onboarding options (conditions, meds, step goals)
+  services/
+    healthConnect.ts        Lazy, guarded Android Health Connect wrapper
+    useHealthConnect.ts     Hook: status, permission, today's steps
   state/
     GameContext.tsx         Single source of truth, persisted via AsyncStorage
-  components/               OrganCard, MarkerRow, shared UI primitives
-  screens/                  Home, Log, Learn, Profile
+  components/               OrganCard, MarkerRow, ActivityCard, UI primitives
+  screens/                  Onboarding, Home, Log, Learn, Profile
   theme.ts                  Design tokens
 ```
+
+### Health Connect (real step data)
+
+Reading steps uses [`react-native-health-connect`](https://github.com/matinzd/react-native-health-connect)
+and is **Android-only, requiring a development build** (it does not work in Expo
+Go or on web). The app degrades gracefully when it's unavailable. To try it:
+
+```bash
+npx expo run:android        # builds a dev client with the native module
+```
+
+You also need the Health Connect app installed on the device (Android 14+ has it
+built in; older versions install it from the Play Store).
 
 ## Getting started
 
