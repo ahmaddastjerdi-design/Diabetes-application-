@@ -41,6 +41,12 @@ jobs:
         run: npm run typecheck
       - name: Test (shared + services)
         run: npm test
+      - name: Build service servers (full typecheck of infra/server)
+        run: |
+          npm run -w @diabetes-quest/backend build:full
+          npm run -w @diabetes-quest/device-gateway build:full
+      - name: Device-gateway integration (forwarding)
+        run: npm run -w @diabetes-quest/device-gateway test:integration
 
   backend-integration:
     name: Backend integration (Postgres)

@@ -8,10 +8,13 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:full": "tsc -p tsconfig.full.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:full": "tsc --noEmit -p tsconfig.full.json",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "start": "node dist-full/server.js",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:integration": "npm run build && node --test test-integration/*.test.mjs"
   },
   "dependencies": {
     "@diabetes-quest/shared": "*",

@@ -1,16 +1,43 @@
-# `services/device-gateway` — Medical Device Ingest (skeleton)
+# `services/device-gateway` — Medical Device Ingest (Phase 2)
 
-## Implemented in this skeleton
+## Phase 2 — implemented (connectors + forwarding worker)
 
-- `src/core/mapping.ts` — `toObservation` maps a `RawMeasurement` → FHIR `Observation`
-  with shared `LOINC` codes, units normalisation (mmol/L→mg/dL, lb→kg), and a stable
-  `measurementIdentifier` for the dedup/idempotency contract.
-- `src/core/queue.ts` — `OfflineQueue`: idempotent enqueue, FIFO `due()`/`ack()`/`fail()`
-  with exponential backoff — the durable offline-sync contract (Vol 4/5).
-- `src/server.ts` — runnable Fastify entry (`/health`, `/v1/ingest`).
+**Domain core** (`src/core/`, pure, strict TS, 9 unit tests):
 
-The core typechecks clean (strict TS). Health Connect / BLE / vendor-cloud connectors and
-the backend-forwarding worker are `TODO(Vol 5)` and built in Phase 2. Run: `npm install && npm run dev`.
+- `mapping.ts` (Phase 0) — `RawMeasurement` → FHIR `Observation`, units normalisation
+  (mmol/L→mg/dL, lb→kg), stable `measurementIdentifier`.
+- `queue.ts` (Phase 0) — `OfflineQueue`: idempotent enqueue, `due()/ack()/fail()` with backoff.
+- `connectors.ts` — normalise per-source payloads: `fromHealthConnect` (Android),
+  `fromDexcomEgv` (vendor cloud), and `preferByOrigin` cross-origin dedup (data-origin priority).
+- `worker.ts` — `drainOnce(queue, deliver, now)`: forward-to-backend drain loop over an
+  injected `Deliver` port (ack on success, backoff on failure).
+- `device.ts` — `toFhirDevice` (registration → FHIR `Device` + firmware) and the
+  `CERTIFICATION_CHECKLIST` gate for enabling a new device model.
+
+**Infra** (`src/infra/`, real, runs after `npm install`; CI-typechecked via `build:full`):
+
+- `deliver.ts` — `httpDeliver`: the real `fetch`-based POST to the backend.
+- `src/server.ts` — Fastify ingest endpoints (`/v1/ingest`, `/v1/ingest/health-connect`,
+  `/v1/ingest/dexcom`) plus the background forwarding loop.
+
+### Run
+
+```bash
+npm install
+npm test -w @diabetes-quest/device-gateway              # 9 unit tests
+npm run -w @diabetes-quest/device-gateway test:integration   # real-HTTP forward test
+BACKEND_URL=http://localhost:8080 npm run dev -w @diabetes-quest/device-gateway
+```
+
+The forwarding path is verified end-to-end in CI: the worker drains the queue and POSTs
+to a real `node:http` server (`test-integration/forward.integration.test.mjs`), mirroring
+`httpDeliver`.
+
+### Still TODO (later work)
+
+On-device Health Connect / BLE reads live in `apps/mobile` (Phase 2 mobile task); the
+real Dexcom OAuth poller/webhook, persistent (cross-restart) queue storage, and device
+registration persistence are deferred.
 
 
 Ingests measurements from medical devices and normalises them into FHIR `Observation`s.
