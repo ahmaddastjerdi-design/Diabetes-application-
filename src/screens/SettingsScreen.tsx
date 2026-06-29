@@ -141,6 +141,12 @@ export function SettingsScreen() {
       )}
 
       <Card style={styles.card}>
+        <Text style={styles.section}>Medications</Text>
+        <Text style={styles.hint}>Browse all diabetes & comorbidity drug classes and mark the ones you take.</Text>
+        <Button label="Medication guide" variant="ghost" onPress={() => navigation.navigate("Medications")} />
+      </Card>
+
+      <Card style={styles.card}>
         <Text style={styles.section}>Devices</Text>
         <Text style={styles.hint}>{`${pairedDevices.length} connected`}</Text>
         <Button label="Manage devices & readings" variant="ghost" onPress={() => navigation.navigate("Devices")} />

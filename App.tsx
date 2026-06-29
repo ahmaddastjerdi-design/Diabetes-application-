@@ -21,6 +21,7 @@ import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { CoachScreen } from "./src/screens/CoachScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { DeviceScreen } from "./src/screens/DeviceScreen";
+import { MedicationsScreen } from "./src/screens/MedicationsScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { theme } from "./src/theme";
 
@@ -85,6 +86,7 @@ function Root() {
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Devices" component={DeviceScreen} />
+      <Stack.Screen name="Medications" component={MedicationsScreen} />
     </Stack.Navigator>
   );
 }

@@ -94,6 +94,7 @@ interface PersistedState {
   readings?: Reading[];
   reminders?: string[];
   outbox?: OutboxItem[];
+  myMedications?: string[];
 }
 
 export interface GameContextValue {
@@ -105,6 +106,7 @@ export interface GameContextValue {
   readings: Reading[];
   reminders: string[];
   outbox: OutboxItem[];
+  myMedications: string[];
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
@@ -116,6 +118,7 @@ export interface GameContextValue {
   unpairDevice: (id: string) => void;
   addReading: (mgdl: number, source: Reading["source"]) => void;
   toggleReminder: (slotId: string) => void;
+  toggleMedication: (drugId: string) => void;
   /** Remove outbox events the backend has accepted. */
   markSynced: (ids: string[]) => void;
   /** Log an action: applies effects, awards XP, advances the day. */
@@ -142,6 +145,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [reminders, setReminders] = useState<string[]>([]);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const [myMedications, setMyMedications] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -159,6 +163,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.readings) setReadings(p.readings);
           if (p.reminders) setReminders(p.reminders);
           if (p.outbox) setOutbox(p.outbox);
+          if (p.myMedications) setMyMedications(p.myMedications);
         }
       } catch {
         // start fresh on any corruption
@@ -171,9 +176,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox };
+    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, myMedications };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, ready]);
+  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, myMedications, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -301,6 +306,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setReminders((prev) => (prev.includes(slotId) ? prev.filter((s) => s !== slotId) : [...prev, slotId]));
   }, []);
 
+  const toggleMedication = useCallback<GameContextValue["toggleMedication"]>((drugId) => {
+    setMyMedications((prev) => (prev.includes(drugId) ? prev.filter((d) => d !== drugId) : [...prev, drugId]));
+  }, []);
+
   const reset = useCallback(() => {
     setBody(initialBodyState());
     setProgress(initialProgress());
@@ -319,6 +328,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     readings,
     reminders,
     outbox,
+    myMedications,
     ready,
     level,
     inRangeCount,
@@ -328,6 +338,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     unpairDevice,
     addReading,
     toggleReminder,
+    toggleMedication,
     markSynced,
     logAction,
     completeLesson,

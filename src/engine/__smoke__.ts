@@ -17,6 +17,7 @@ import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
 import { readingToObservation } from "../lib/fhir";
 import { classifyGlucoseLevel, gmiPercent, ADA_TARGETS } from "../lib/ada";
+import { MEDICATION_CATALOG, allDrugs } from "../data/medications";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -106,6 +107,17 @@ expect("ADA: 181–250 is high, >250 very high",
 expect("ADA: GMI from mean 154 mg/dL ≈ 7.0%", gmiPercent(154) === 7.0);
 expect("ADA: target list includes the 70–180 time-in-range goal",
   ADA_TARGETS.some((t) => t.key === "tir" && t.target.includes("70")));
+
+// Medication catalog: all major T2DM classes + comorbidity meds (not just metformin/insulin).
+const catIds = MEDICATION_CATALOG.map((c) => c.id);
+expect("catalog covers the key glucose-lowering classes",
+  ["biguanide", "sulfonylurea", "dpp4", "sglt2", "glp1", "tzd", "insulin"].every((k) => catIds.includes(k)));
+expect("catalog covers comorbidity meds (BP, lipids, neuropathy)",
+  ["bp", "lipids", "neuropathy"].every((k) => catIds.includes(k)));
+const drugs = allDrugs();
+expect("catalog lists many drugs (well beyond metformin + insulin)", drugs.length >= 40);
+expect("every drug has a generic name and an educational note",
+  drugs.every((d) => d.drug.generic.length > 0 && d.drug.note.length > 0));
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {
