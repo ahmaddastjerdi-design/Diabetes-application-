@@ -79,8 +79,12 @@ function Category({
               <View style={[styles.checkbox, picked && styles.checkboxOn]}>{picked && <Text style={styles.check}>✓</Text>}</View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.drugName}>{d.generic}</Text>
-                {d.brands ? <Text style={styles.drugBrands}>{d.brands}</Text> : null}
+                {d.persian ? <Text style={styles.drugPersian}>{d.persian}</Text> : null}
                 <Text style={styles.drugNote}>{d.note}</Text>
+                {d.form || d.strengths ? (
+                  <Text style={styles.drugMeta}>{[d.form, d.strengths].filter(Boolean).join(" · ")}</Text>
+                ) : null}
+                {d.usualDose ? <Text style={styles.drugDose}>Reference dose: {d.usualDose}</Text> : null}
               </View>
             </Pressable>
           );
@@ -109,6 +113,8 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   check: { color: "#fff", fontWeight: "800", fontSize: 13 },
   drugName: { fontSize: 14, fontWeight: "700", color: theme.colors.text },
-  drugBrands: { fontSize: 12, color: theme.colors.primary, marginTop: 1 },
+  drugPersian: { fontSize: 13, color: theme.colors.text, marginTop: 1, textAlign: "right", writingDirection: "rtl" },
   drugNote: { fontSize: 12, color: theme.colors.subtext, marginTop: 2, lineHeight: 17 },
+  drugMeta: { fontSize: 11, color: theme.colors.text, marginTop: 3, fontWeight: "600" },
+  drugDose: { fontSize: 11, color: theme.colors.primary, marginTop: 1, lineHeight: 15 },
 });

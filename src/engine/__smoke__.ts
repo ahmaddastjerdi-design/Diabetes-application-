@@ -110,14 +110,17 @@ expect("ADA: target list includes the 70–180 time-in-range goal",
 
 // Medication catalog: all major T2DM classes + comorbidity meds (not just metformin/insulin).
 const catIds = MEDICATION_CATALOG.map((c) => c.id);
-expect("catalog covers the key glucose-lowering classes",
-  ["biguanide", "sulfonylurea", "dpp4", "sglt2", "glp1", "tzd", "insulin"].every((k) => catIds.includes(k)));
+expect("catalog covers all darooyab.ir classes incl. dual GIP/GLP-1 and combinations",
+  ["biguanide", "sulfonylurea", "meglitinide", "tzd", "agi", "dpp4", "sglt2", "glp1", "dual", "insulin", "combo"].every((k) => catIds.includes(k)));
 expect("catalog covers comorbidity meds (BP, lipids, neuropathy)",
   ["bp", "lipids", "neuropathy"].every((k) => catIds.includes(k)));
 const drugs = allDrugs();
-expect("catalog lists many drugs (well beyond metformin + insulin)", drugs.length >= 40);
+expect("catalog lists 50+ drugs (well beyond metformin + insulin)", drugs.length >= 50);
 expect("every drug has a generic name and an educational note",
   drugs.every((d) => d.drug.generic.length > 0 && d.drug.note.length > 0));
+expect("antidiabetics carry Persian names + reference doses (from darooyab.ir)",
+  MEDICATION_CATALOG.filter((c) => c.group === "diabetes").every((c) => c.drugs.every((d) => !!d.persian)) &&
+    MEDICATION_CATALOG.find((c) => c.id === "biguanide")!.drugs[0].persian === "متفورمین");
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {
