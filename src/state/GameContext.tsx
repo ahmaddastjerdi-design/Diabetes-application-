@@ -358,6 +358,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     reminders,
     outbox,
     myMedications,
+    measurements,
     ready,
     level,
     inRangeCount,
