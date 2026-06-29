@@ -77,12 +77,16 @@ export interface PairedDevice {
   pairedAt: number;
 }
 
-/** A glucose reading (manual entry today; device-sourced once connectors land). */
+/** A vital-sign reading: glucose (mgdl) or blood pressure (systolic/diastolic). */
 export interface Reading {
   id: string;
-  mgdl: number;
   atMs: number;
   source: "manual" | "device";
+  /** Defaults to "glucose" for older stored readings that predate this field. */
+  kind?: "glucose" | "bp";
+  mgdl?: number;
+  systolic?: number;
+  diastolic?: number;
 }
 
 interface PersistedState {
@@ -117,6 +121,7 @@ export interface GameContextValue {
   pairDevice: (kind: DeviceKind, name: string) => void;
   unpairDevice: (id: string) => void;
   addReading: (mgdl: number, source: Reading["source"]) => void;
+  addBpReading: (systolic: number, diastolic: number, source: Reading["source"]) => void;
   toggleReminder: (slotId: string) => void;
   toggleMedication: (drugId: string) => void;
   /** Remove outbox events the backend has accepted. */
@@ -299,7 +304,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const addReading = useCallback<GameContextValue["addReading"]>((mgdl, source) => {
     const id = `r-${Date.now()}`;
-    setReadings((prev) => [{ id, mgdl, atMs: Date.now(), source }, ...prev].slice(0, 50));
+    setReadings((prev) => [{ id, kind: "glucose", mgdl, atMs: Date.now(), source }, ...prev].slice(0, 400));
+  }, []);
+
+  const addBpReading = useCallback<GameContextValue["addBpReading"]>((systolic, diastolic, source) => {
+    const id = `bp-${Date.now()}`;
+    setReadings((prev) => [{ id, kind: "bp", systolic, diastolic, atMs: Date.now(), source }, ...prev].slice(0, 400));
   }, []);
 
   const toggleReminder = useCallback<GameContextValue["toggleReminder"]>((slotId) => {
@@ -337,6 +347,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     pairDevice,
     unpairDevice,
     addReading,
+    addBpReading,
     toggleReminder,
     toggleMedication,
     markSynced,

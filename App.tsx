@@ -19,6 +19,7 @@ import { LogScreen } from "./src/screens/LogScreen";
 import { LearnScreen } from "./src/screens/LearnScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { CoachScreen } from "./src/screens/CoachScreen";
+import { VitalsScreen } from "./src/screens/VitalsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { DeviceScreen } from "./src/screens/DeviceScreen";
 import { MedicationsScreen } from "./src/screens/MedicationsScreen";
@@ -31,6 +32,7 @@ const Stack = createNativeStackNavigator();
 const TAB_ICON: Record<string, string> = {
   Home: "🩺",
   Log: "➕",
+  Vitals: "📈",
   Learn: "📚",
   Coach: "🤖",
   Profile: "🏅",
@@ -60,6 +62,7 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Log" component={LogScreen} />
+      <Tab.Screen name="Vitals" component={VitalsScreen} />
       <Tab.Screen name="Learn" component={LearnScreen} />
       <Tab.Screen name="Coach" component={CoachScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

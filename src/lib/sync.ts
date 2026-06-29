@@ -10,7 +10,7 @@
  * which the backend accepts only when no IdP is configured. Production swaps this for a
  * real bearer token.
  */
-import { readingToObservation, type ReadingLike } from "./fhir";
+import { readingToObservations, type ReadingLike } from "./fhir";
 
 export type DomainEvent =
   | { type: "action_logged"; day: number; allMarkersInRange: boolean }
@@ -74,15 +74,17 @@ export async function pushEvents(cfg: SyncConfig, items: readonly OutboxItem[]):
 export async function pushReadings(cfg: SyncConfig, readings: readonly ReadingLike[]): Promise<{ pushed: number }> {
   let pushed = 0;
   for (const r of readings) {
-    try {
-      const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/observations`, {
-        method: "POST",
-        headers: devAuthHeaders(cfg.userId),
-        body: JSON.stringify(readingToObservation(r, cfg.userId)),
-      });
-      if (res.ok) pushed++;
-    } catch {
-      // non-fatal; the reading stays and retries next sync
+    for (const observation of readingToObservations(r, cfg.userId)) {
+      try {
+        const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/observations`, {
+          method: "POST",
+          headers: devAuthHeaders(cfg.userId),
+          body: JSON.stringify(observation),
+        });
+        if (res.ok) pushed++;
+      } catch {
+        // non-fatal; the reading stays and retries next sync
+      }
     }
   }
   return { pushed };

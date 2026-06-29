@@ -15,8 +15,9 @@ import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply, coachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
-import { readingToObservation } from "../lib/fhir";
+import { readingToObservation, readingToObservations } from "../lib/fhir";
 import { classifyGlucoseLevel, gmiPercent, ADA_TARGETS } from "../lib/ada";
+import { bucketSeries } from "../lib/trends";
 import { MEDICATION_CATALOG, allDrugs } from "../data/medications";
 
 function simulate(actionIds: string[], days: number): BodyState {
@@ -121,6 +122,20 @@ expect("every drug has a generic name and an educational note",
 expect("antidiabetics carry Persian names + reference doses (from darooyab.ir)",
   MEDICATION_CATALOG.filter((c) => c.group === "diabetes").every((c) => c.drugs.every((d) => !!d.persian)) &&
     MEDICATION_CATALOG.find((c) => c.id === "biguanide")!.drugs[0].persian === "متفورمین");
+
+// Blood pressure → FHIR (systolic + diastolic), for charts + doctor transfer.
+const bpObs = readingToObservations({ id: "b1", atMs: Date.parse("2026-06-01T08:00:00Z"), kind: "bp", systolic: 128, diastolic: 82 }, "p-1");
+expect("BP reading produces systolic + diastolic FHIR observations (mmHg)",
+  bpObs.length === 2 && bpObs[0].code.coding[0].code === "8480-6" && bpObs[1].code.coding[0].code === "8462-4" && bpObs[0].valueQuantity.unit === "mmHg");
+
+// Time-bucketed charts (hourly / daily / weekly / monthly).
+const tnow = Date.parse("2026-06-01T12:00:00Z");
+const hourly = bucketSeries([{ atMs: tnow - 20 * 60000, value: 120 }, { atMs: tnow - 80 * 60000, value: 140 }], "hourly", tnow);
+expect("hourly chart has 24 buckets and places recent readings at the end",
+  hourly.length === 24 && (hourly[23].value !== null || hourly[22].value !== null));
+expect("weekly chart has 8 buckets; empty input → all null",
+  bucketSeries([], "weekly", tnow).length === 8 && bucketSeries([], "weekly", tnow).every((b) => b.value === null));
+expect("monthly chart has 12 buckets", bucketSeries([], "monthly", tnow).length === 12);
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {
