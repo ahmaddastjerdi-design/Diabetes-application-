@@ -15,9 +15,10 @@ import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply, coachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
-import { readingToObservation, readingToObservations } from "../lib/fhir";
+import { readingToObservation, readingToObservations, metricObservation } from "../lib/fhir";
 import { classifyGlucoseLevel, gmiPercent, ADA_TARGETS } from "../lib/ada";
 import { bucketSeries } from "../lib/trends";
+import { METRICS, getMetric, bmi } from "../data/metrics";
 import { MEDICATION_CATALOG, allDrugs } from "../data/medications";
 
 function simulate(actionIds: string[], days: number): BodyState {
@@ -136,6 +137,16 @@ expect("hourly chart has 24 buckets and places recent readings at the end",
 expect("weekly chart has 8 buckets; empty input → all null",
   bucketSeries([], "weekly", tnow).length === 8 && bucketSeries([], "weekly", tnow).every((b) => b.value === null));
 expect("monthly chart has 12 buckets", bucketSeries([], "monthly", tnow).length === 12);
+
+// Lab & body metrics (cholesterol/LDL/HDL/triglycerides, BUN, creatinine, proBNP, weight…).
+expect("metrics catalog covers lipids/renal/cardiac/body labs",
+  ["ldl", "hdl", "triglycerides", "chol_total", "bun", "creatinine", "urine_creatinine", "egfr", "probnp", "weight", "height"].every((k) => !!getMetric(k)));
+expect("BMI computes from weight + height", Math.abs(bmi(80, 178) - 25.2) < 0.3);
+const ldlDef = getMetric("ldl")!;
+const labObs = metricObservation("p-1", ldlDef.loinc!, ldlDef.unit, 95, Date.parse("2026-06-01T08:00:00Z"), "m1");
+expect("lab value → FHIR Observation with its LOINC code + unit",
+  labObs.code.coding[0].code === "13457-7" && labObs.valueQuantity.value === 95 && labObs.valueQuantity.unit === "mg/dL");
+expect("every metric has a label and unit", METRICS.every((m) => m.label.length > 0 && m.unit.length > 0));
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {

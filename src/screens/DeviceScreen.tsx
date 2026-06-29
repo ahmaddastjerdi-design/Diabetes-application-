@@ -112,9 +112,10 @@ export function DeviceScreen() {
       {readings.length > 0 && (
         <Card style={styles.card}>
           <Text style={styles.section}>Recent readings</Text>
-          {readings.slice(0, 10).map((r) => {
-            const level = classifyGlucoseLevel(r.mgdl);
-            const fmt = formatMarker(MARKERS.glucose, r.mgdl, profile.glucoseUnit);
+          {readings.filter((r) => r.mgdl != null).slice(0, 10).map((r) => {
+            const mgdl = r.mgdl as number;
+            const level = classifyGlucoseLevel(mgdl);
+            const fmt = formatMarker(MARKERS.glucose, mgdl, profile.glucoseUnit);
             return (
               <View key={r.id} style={styles.readingRow}>
                 <Text style={styles.readingValue}>

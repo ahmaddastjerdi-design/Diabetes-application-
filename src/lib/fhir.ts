@@ -53,6 +53,11 @@ export function readingToObservation(r: ReadingLike, patientId: string): Observa
   return obs(patientId, r.atMs, LOINC_GLUCOSE, r.mgdl ?? 0, "mg/dL", r.id);
 }
 
+/** A lab/body metric value → a FHIR Observation using the metric's LOINC code. */
+export function metricObservation(patientId: string, loinc: string, unit: string, value: number, atMs: number, id: string): Observation {
+  return obs(patientId, atMs, { system: "http://loinc.org", code: loinc }, value, unit, id);
+}
+
 /** Any reading → its FHIR Observation(s). Blood pressure yields systolic + diastolic. */
 export function readingToObservations(r: ReadingLike, patientId: string): Observation[] {
   if (r.kind === "bp" && r.systolic != null && r.diastolic != null) {

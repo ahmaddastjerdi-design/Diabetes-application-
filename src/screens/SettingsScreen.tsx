@@ -24,7 +24,7 @@ const CONDITION_LABEL: Record<ConditionType, string> = {
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices, outbox, markSynced, readings } =
+  const { profile, updateProfile, body, progress, completedLessons, reset, reminders, toggleReminder, pairedDevices, outbox, markSynced, readings, measurements } =
     useGame();
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
@@ -32,7 +32,7 @@ export function SettingsScreen() {
   const doSync = async () => {
     setSyncing(true);
     setSyncMsg("");
-    const res = await syncAll({ baseUrl: profile.backendUrl, userId: profile.patientId }, outbox, readings);
+    const res = await syncAll({ baseUrl: profile.backendUrl, userId: profile.patientId }, outbox, readings, measurements);
     if (res.ok) {
       markSynced(res.syncedIds);
       const sp = res.serverProgress;

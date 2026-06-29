@@ -11,9 +11,15 @@ import { classifyGlucoseLevel } from "../lib/ada";
 import { formatMarker } from "../lib/units";
 import { MARKERS } from "../engine/physiology";
 import { bucketSeries, seriesRange, Granularity, SeriesPoint } from "../lib/trends";
+import { METRICS, getMetric, bmi, bmiCategory, METRICS_DISCLAIMER } from "../data/metrics";
 import { BarChart } from "../components/BarChart";
 import { Card } from "../components/ui";
 import { theme } from "../theme";
+
+const targetColor = (target: [number, number] | undefined) => (v: number) => {
+  if (!target) return theme.colors.primary;
+  return v < target[0] || v > target[1] ? theme.colors.warn : theme.colors.good;
+};
 
 const RANGES: { key: Granularity; label: string }[] = [
   { key: "hourly", label: "Hourly" },
@@ -32,11 +38,13 @@ const sysColor = (v: number) => (v >= 140 ? theme.colors.bad : v >= 130 ? theme.
 const diaColor = (v: number) => (v >= 90 ? theme.colors.bad : v >= 80 ? theme.colors.warn : theme.colors.good);
 
 export function VitalsScreen() {
-  const { readings, addReading, addBpReading, profile } = useGame();
+  const { readings, addReading, addBpReading, measurements, addMeasurement, profile } = useGame();
   const [gran, setGran] = useState<Granularity>("hourly");
   const [glucose, setGlucose] = useState("");
   const [sys, setSys] = useState("");
   const [dia, setDia] = useState("");
+  const [metricKey, setMetricKey] = useState<string>("ldl");
+  const [metricVal, setMetricVal] = useState("");
   const now = Date.now();
 
   const glucosePoints: SeriesPoint[] = readings
@@ -68,6 +76,23 @@ export function VitalsScreen() {
     addBpReading(s, d, "manual");
     setSys("");
     setDia("");
+  };
+
+  const selectedMetric = getMetric(metricKey);
+  const metricPoints: SeriesPoint[] = measurements
+    .filter((m) => m.metricKey === metricKey)
+    .map((m) => ({ atMs: m.atMs, value: m.value }));
+  const mBuckets = bucketSeries(metricPoints, gran, now);
+  const latestOf = (key: string) => measurements.filter((m) => m.metricKey === key).sort((a, b) => b.atMs - a.atMs)[0]?.value;
+  const wt = latestOf("weight");
+  const ht = latestOf("height");
+  const bmiValue = wt != null && ht != null ? bmi(wt, ht) : null;
+
+  const addMetric = () => {
+    const v = parseFloat(metricVal);
+    if (!Number.isFinite(v) || v <= 0) return Alert.alert("Check the value", "Enter a number.");
+    addMeasurement(metricKey, v, "manual");
+    setMetricVal("");
   };
 
   return (
@@ -117,6 +142,33 @@ export function VitalsScreen() {
         <Text style={styles.legend}>Target under 130/80 mmHg (ADA); your clinician sets your goal.</Text>
       </Card>
 
+      {/* Labs & body metrics */}
+      <Card style={styles.card}>
+        <Text style={styles.section}>Labs & body</Text>
+        <View style={styles.metricChips}>
+          {METRICS.map((m) => (
+            <Pressable key={m.key} onPress={() => setMetricKey(m.key)} style={[styles.metricChip, metricKey === m.key && styles.metricChipOn]}>
+              <Text style={[styles.metricChipText, metricKey === m.key && styles.metricChipTextOn]}>{m.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.row}>
+          <TextInput style={styles.input} value={metricVal} onChangeText={setMetricVal} keyboardType="decimal-pad" placeholder={selectedMetric ? `Value (${selectedMetric.unit})` : "Value"} placeholderTextColor={theme.colors.subtext} />
+          <Pressable style={styles.addBtn} onPress={addMetric}><Text style={styles.addText}>Add</Text></Pressable>
+        </View>
+        {selectedMetric && (
+          <>
+            <Text style={styles.section}>{selectedMetric.label} ({selectedMetric.unit})</Text>
+            <BarChart buckets={mBuckets} range={seriesRange(mBuckets, selectedMetric.target ?? [0, 1])} colorFor={targetColor(selectedMetric.target)} />
+            {selectedMetric.target && <Text style={styles.legend}>Reference range {selectedMetric.target[0]}–{selectedMetric.target[1]} {selectedMetric.unit}.</Text>}
+          </>
+        )}
+        {bmiValue != null && (
+          <Text style={styles.bmi}>BMI: {bmiValue} — {bmiCategory(bmiValue)} (from latest weight {wt} kg & height {ht} cm)</Text>
+        )}
+        <Text style={styles.legend}>{METRICS_DISCLAIMER}</Text>
+      </Card>
+
       <Text style={styles.sync}>
         {profile.syncEnabled
           ? "Cloud sync is ON — use Settings → Sync now to send these to your care team."
@@ -143,6 +195,13 @@ const styles = StyleSheet.create({
   segItemOn: { backgroundColor: theme.colors.primary },
   segText: { fontWeight: "700", color: theme.colors.subtext, fontSize: 13 },
   segTextOn: { color: "#fff" },
-  legend: { fontSize: 11, color: theme.colors.subtext, marginTop: 2 },
+  legend: { fontSize: 11, color: theme.colors.subtext, marginTop: 2, lineHeight: 16 },
+  metricChips: { flexDirection: "row", flexWrap: "wrap", gap: theme.space(1.5) },
+  metricChip: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.pill, paddingVertical: theme.space(1), paddingHorizontal: theme.space(2.5) },
+  metricChipOn: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + "11" },
+  metricChipText: { fontSize: 11, fontWeight: "600", color: theme.colors.text },
+  metricChipTextOn: { color: theme.colors.primary },
+  bmi: { fontSize: 13, fontWeight: "700", color: theme.colors.text, marginTop: theme.space(1) },
   sync: { fontSize: 12, color: theme.colors.subtext, textAlign: "center", marginTop: theme.space(1), lineHeight: 17 },
 });
+
