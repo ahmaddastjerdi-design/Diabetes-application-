@@ -8,14 +8,21 @@ import React, { useState } from "react";
 import { ScrollView, View, Text, StyleSheet, TextInput, Pressable, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useGame } from "../state/GameContext";
-import { DEVICE_CATALOG, DeviceKind, validateGlucoseReading, classifyGlucose } from "../lib/health";
+import { DEVICE_CATALOG, DeviceKind, validateGlucoseReading } from "../lib/health";
+import { classifyGlucoseLevel, GLUCOSE_LEVEL, GlucoseLevel } from "../lib/ada";
 import { formatMarker } from "../lib/units";
 import { MARKERS } from "../engine/physiology";
 import { Card, Button, Pill } from "../components/ui";
 import { theme } from "../theme";
 
-const CLASS_COLOR = { low: theme.colors.bad, "in-range": theme.colors.good, high: theme.colors.warn } as const;
-const CLASS_LABEL = { low: "Low", "in-range": "In range", high: "High" } as const;
+// ADA hypoglycemia levels → colour (Level 2 <54 and >250 are urgent).
+const LEVEL_COLOR: Record<GlucoseLevel, string> = {
+  level2: theme.colors.bad,
+  level1: theme.colors.warn,
+  inRange: theme.colors.good,
+  high: theme.colors.warn,
+  veryHigh: theme.colors.bad,
+};
 
 export function DeviceScreen() {
   const navigation = useNavigation<any>();
@@ -105,15 +112,16 @@ export function DeviceScreen() {
       {readings.length > 0 && (
         <Card style={styles.card}>
           <Text style={styles.section}>Recent readings</Text>
-          {readings.slice(0, 10).map((r) => {
-            const cls = classifyGlucose(r.mgdl);
-            const fmt = formatMarker(MARKERS.glucose, r.mgdl, profile.glucoseUnit);
+          {readings.filter((r) => r.mgdl != null).slice(0, 10).map((r) => {
+            const mgdl = r.mgdl as number;
+            const level = classifyGlucoseLevel(mgdl);
+            const fmt = formatMarker(MARKERS.glucose, mgdl, profile.glucoseUnit);
             return (
               <View key={r.id} style={styles.readingRow}>
                 <Text style={styles.readingValue}>
                   {fmt.value} <Text style={styles.readingUnit}>{fmt.unit}</Text>
                 </Text>
-                <Pill label={CLASS_LABEL[cls]} color={CLASS_COLOR[cls]} />
+                <Pill label={GLUCOSE_LEVEL[level].label} color={LEVEL_COLOR[level]} />
               </View>
             );
           })}

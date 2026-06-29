@@ -15,7 +15,11 @@ import { formatMarker, mgdlToMmol } from "../lib/units";
 import { localCoachReply, coachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
-import { readingToObservation } from "../lib/fhir";
+import { readingToObservation, readingToObservations, metricObservation } from "../lib/fhir";
+import { classifyGlucoseLevel, gmiPercent, ADA_TARGETS } from "../lib/ada";
+import { bucketSeries } from "../lib/trends";
+import { METRICS, getMetric, bmi } from "../data/metrics";
+import { MEDICATION_CATALOG, allDrugs } from "../data/medications";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -95,6 +99,54 @@ expect("reading → FHIR Observation: LOINC glucose, mg/dL, patient subject + id
     obs.valueQuantity.unit === "mg/dL" &&
     obs.subject.reference === "Patient/p-1" &&
     obs.identifier?.[0].value === "r1");
+
+// ADA Standards of Care alignment (hypoglycemia levels, target range, GMI).
+expect("ADA: <54 is Level 2 hypoglycemia", classifyGlucoseLevel(50) === "level2");
+expect("ADA: 54–69 is Level 1 hypoglycemia", classifyGlucoseLevel(65) === "level1");
+expect("ADA: 70–180 is in target range", classifyGlucoseLevel(120) === "inRange");
+expect("ADA: 181–250 is high, >250 very high",
+  classifyGlucoseLevel(200) === "high" && classifyGlucoseLevel(300) === "veryHigh");
+expect("ADA: GMI from mean 154 mg/dL ≈ 7.0%", gmiPercent(154) === 7.0);
+expect("ADA: target list includes the 70–180 time-in-range goal",
+  ADA_TARGETS.some((t) => t.key === "tir" && t.target.includes("70")));
+
+// Medication catalog: all major T2DM classes + comorbidity meds (not just metformin/insulin).
+const catIds = MEDICATION_CATALOG.map((c) => c.id);
+expect("catalog covers all darooyab.ir classes incl. dual GIP/GLP-1 and combinations",
+  ["biguanide", "sulfonylurea", "meglitinide", "tzd", "agi", "dpp4", "sglt2", "glp1", "dual", "insulin", "combo"].every((k) => catIds.includes(k)));
+expect("catalog covers comorbidity meds (BP, lipids, neuropathy)",
+  ["bp", "lipids", "neuropathy"].every((k) => catIds.includes(k)));
+const drugs = allDrugs();
+expect("catalog lists 50+ drugs (well beyond metformin + insulin)", drugs.length >= 50);
+expect("every drug has a generic name and an educational note",
+  drugs.every((d) => d.drug.generic.length > 0 && d.drug.note.length > 0));
+expect("antidiabetics carry Persian names + reference doses (from darooyab.ir)",
+  MEDICATION_CATALOG.filter((c) => c.group === "diabetes").every((c) => c.drugs.every((d) => !!d.persian)) &&
+    MEDICATION_CATALOG.find((c) => c.id === "biguanide")!.drugs[0].persian === "متفورمین");
+
+// Blood pressure → FHIR (systolic + diastolic), for charts + doctor transfer.
+const bpObs = readingToObservations({ id: "b1", atMs: Date.parse("2026-06-01T08:00:00Z"), kind: "bp", systolic: 128, diastolic: 82 }, "p-1");
+expect("BP reading produces systolic + diastolic FHIR observations (mmHg)",
+  bpObs.length === 2 && bpObs[0].code.coding[0].code === "8480-6" && bpObs[1].code.coding[0].code === "8462-4" && bpObs[0].valueQuantity.unit === "mmHg");
+
+// Time-bucketed charts (hourly / daily / weekly / monthly).
+const tnow = Date.parse("2026-06-01T12:00:00Z");
+const hourly = bucketSeries([{ atMs: tnow - 20 * 60000, value: 120 }, { atMs: tnow - 80 * 60000, value: 140 }], "hourly", tnow);
+expect("hourly chart has 24 buckets and places recent readings at the end",
+  hourly.length === 24 && (hourly[23].value !== null || hourly[22].value !== null));
+expect("weekly chart has 8 buckets; empty input → all null",
+  bucketSeries([], "weekly", tnow).length === 8 && bucketSeries([], "weekly", tnow).every((b) => b.value === null));
+expect("monthly chart has 12 buckets", bucketSeries([], "monthly", tnow).length === 12);
+
+// Lab & body metrics (cholesterol/LDL/HDL/triglycerides, BUN, creatinine, proBNP, weight…).
+expect("metrics catalog covers lipids/renal/cardiac/body labs",
+  ["ldl", "hdl", "triglycerides", "chol_total", "bun", "creatinine", "urine_creatinine", "egfr", "probnp", "weight", "height"].every((k) => !!getMetric(k)));
+expect("BMI computes from weight + height", Math.abs(bmi(80, 178) - 25.2) < 0.3);
+const ldlDef = getMetric("ldl")!;
+const labObs = metricObservation("p-1", ldlDef.loinc!, ldlDef.unit, 95, Date.parse("2026-06-01T08:00:00Z"), "m1");
+expect("lab value → FHIR Observation with its LOINC code + unit",
+  labObs.code.coding[0].code === "13457-7" && labObs.valueQuantity.value === 95 && labObs.valueQuantity.unit === "mg/dL");
+expect("every metric has a label and unit", METRICS.every((m) => m.label.length > 0 && m.unit.length > 0));
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {

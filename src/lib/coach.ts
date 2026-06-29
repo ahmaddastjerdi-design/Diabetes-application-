@@ -48,8 +48,10 @@ function educationalReply(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("exercise") || m.includes("walk"))
     return "Gentle activity like a walk after meals can help your body use glucose and eases the strain on your heart over time. Even 10 minutes counts.";
+  if (m.includes("range") || m.includes("target") || m.includes("70") || m.includes("180"))
+    return "A common goal is keeping glucose in the 70–180 mg/dL range most of the day (an ADA time-in-range target), staying above 70 to avoid lows. Your own targets are set with your clinician.";
   if (m.includes("sugar") || m.includes("carb") || m.includes("diet") || m.includes("eat"))
-    return "Balancing carbohydrates with protein, fibre and water tends to keep glucose steadier. Small, consistent choices add up — that's what the organ view is showing you.";
+    return "Balancing carbohydrates with protein, fibre and water tends to keep glucose steadier — which helps you spend more time in the 70–180 mg/dL range. Small, consistent choices add up.";
   if (m.includes("water") || m.includes("hydrat"))
     return "Staying hydrated supports your kidneys as they filter your blood. Water is a simple, high-impact habit.";
   if (m.includes("stress") || m.includes("sleep"))

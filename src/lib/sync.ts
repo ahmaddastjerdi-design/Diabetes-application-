@@ -10,7 +10,15 @@
  * which the backend accepts only when no IdP is configured. Production swaps this for a
  * real bearer token.
  */
-import { readingToObservation, type ReadingLike } from "./fhir";
+import { readingToObservations, metricObservation, type ReadingLike } from "./fhir";
+import { getMetric } from "../data/metrics";
+
+export interface MeasurementLike {
+  id: string;
+  metricKey: string;
+  value: number;
+  atMs: number;
+}
 
 export type DomainEvent =
   | { type: "action_logged"; day: number; allMarkersInRange: boolean }
@@ -74,15 +82,37 @@ export async function pushEvents(cfg: SyncConfig, items: readonly OutboxItem[]):
 export async function pushReadings(cfg: SyncConfig, readings: readonly ReadingLike[]): Promise<{ pushed: number }> {
   let pushed = 0;
   for (const r of readings) {
+    for (const observation of readingToObservations(r, cfg.userId)) {
+      try {
+        const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/observations`, {
+          method: "POST",
+          headers: devAuthHeaders(cfg.userId),
+          body: JSON.stringify(observation),
+        });
+        if (res.ok) pushed++;
+      } catch {
+        // non-fatal; the reading stays and retries next sync
+      }
+    }
+  }
+  return { pushed };
+}
+
+/** Push lab/body measurements (that have a LOINC code) as FHIR Observations. */
+export async function pushMeasurements(cfg: SyncConfig, measurements: readonly MeasurementLike[]): Promise<{ pushed: number }> {
+  let pushed = 0;
+  for (const m of measurements) {
+    const metric = getMetric(m.metricKey);
+    if (!metric?.loinc) continue;
     try {
       const res = await fetch(`${normalizeBaseUrl(cfg.baseUrl)}/v1/observations`, {
         method: "POST",
         headers: devAuthHeaders(cfg.userId),
-        body: JSON.stringify(readingToObservation(r, cfg.userId)),
+        body: JSON.stringify(metricObservation(cfg.userId, metric.loinc, metric.unit, m.value, m.atMs, m.id)),
       });
       if (res.ok) pushed++;
     } catch {
-      // non-fatal; the reading stays and retries next sync
+      // non-fatal
     }
   }
   return { pushed };
@@ -106,18 +136,20 @@ export async function fetchProgress(cfg: SyncConfig): Promise<{ ok: boolean; pro
 export async function syncAll(
   cfg: SyncConfig,
   outbox: readonly OutboxItem[],
-  readings: readonly ReadingLike[] = []
+  readings: readonly ReadingLike[] = [],
+  measurements: readonly MeasurementLike[] = []
 ): Promise<SyncResult> {
   if (!cfg.baseUrl || !cfg.userId)
     return { ok: false, pushed: 0, readingsPushed: 0, syncedIds: [], error: "sync not configured" };
   const push = await pushEvents(cfg, outbox);
   if (!push.ok) return { ok: false, pushed: 0, readingsPushed: 0, syncedIds: [], error: push.error };
   const readingResult = await pushReadings(cfg, readings);
+  const measResult = await pushMeasurements(cfg, measurements);
   const prog = await fetchProgress(cfg);
   return {
     ok: prog.ok,
     pushed: push.syncedIds.length,
-    readingsPushed: readingResult.pushed,
+    readingsPushed: readingResult.pushed + measResult.pushed,
     syncedIds: push.syncedIds,
     serverProgress: prog.progress,
     error: prog.error,

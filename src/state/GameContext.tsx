@@ -77,10 +77,23 @@ export interface PairedDevice {
   pairedAt: number;
 }
 
-/** A glucose reading (manual entry today; device-sourced once connectors land). */
+/** A vital-sign reading: glucose (mgdl) or blood pressure (systolic/diastolic). */
 export interface Reading {
   id: string;
-  mgdl: number;
+  atMs: number;
+  source: "manual" | "device";
+  /** Defaults to "glucose" for older stored readings that predate this field. */
+  kind?: "glucose" | "bp";
+  mgdl?: number;
+  systolic?: number;
+  diastolic?: number;
+}
+
+/** A lab/body measurement keyed by a MetricDef (see src/data/metrics.ts). */
+export interface Measurement {
+  id: string;
+  metricKey: string;
+  value: number;
   atMs: number;
   source: "manual" | "device";
 }
@@ -94,6 +107,8 @@ interface PersistedState {
   readings?: Reading[];
   reminders?: string[];
   outbox?: OutboxItem[];
+  myMedications?: string[];
+  measurements?: Measurement[];
 }
 
 export interface GameContextValue {
@@ -105,6 +120,8 @@ export interface GameContextValue {
   readings: Reading[];
   reminders: string[];
   outbox: OutboxItem[];
+  myMedications: string[];
+  measurements: Measurement[];
   ready: boolean;
   level: ReturnType<typeof levelFromXp>;
   inRangeCount: number;
@@ -115,7 +132,10 @@ export interface GameContextValue {
   pairDevice: (kind: DeviceKind, name: string) => void;
   unpairDevice: (id: string) => void;
   addReading: (mgdl: number, source: Reading["source"]) => void;
+  addBpReading: (systolic: number, diastolic: number, source: Reading["source"]) => void;
+  addMeasurement: (metricKey: string, value: number, source: Measurement["source"]) => void;
   toggleReminder: (slotId: string) => void;
+  toggleMedication: (drugId: string) => void;
   /** Remove outbox events the backend has accepted. */
   markSynced: (ids: string[]) => void;
   /** Log an action: applies effects, awards XP, advances the day. */
@@ -142,6 +162,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [reminders, setReminders] = useState<string[]>([]);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const [myMedications, setMyMedications] = useState<string[]>([]);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [ready, setReady] = useState(false);
 
   // Load persisted state once.
@@ -159,6 +181,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           if (p.readings) setReadings(p.readings);
           if (p.reminders) setReminders(p.reminders);
           if (p.outbox) setOutbox(p.outbox);
+          if (p.myMedications) setMyMedications(p.myMedications);
+          if (p.measurements) setMeasurements(p.measurements);
         }
       } catch {
         // start fresh on any corruption
@@ -171,9 +195,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   // Persist on every change (after initial load).
   useEffect(() => {
     if (!ready) return;
-    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox };
+    const payload: PersistedState = { body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, myMedications, measurements };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => {});
-  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, ready]);
+  }, [body, progress, completedLessons, profile, pairedDevices, readings, reminders, outbox, myMedications, measurements, ready]);
 
   const inRangeCount = useMemo(
     () =>
@@ -293,12 +317,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addReading = useCallback<GameContextValue["addReading"]>((mgdl, source) => {
-    const id = `r-${Date.now()}`;
-    setReadings((prev) => [{ id, mgdl, atMs: Date.now(), source }, ...prev].slice(0, 50));
+    const r: Reading = { id: `r-${Date.now()}`, kind: "glucose", mgdl, atMs: Date.now(), source };
+    setReadings((prev) => [r, ...prev].slice(0, 400));
+  }, []);
+
+  const addBpReading = useCallback<GameContextValue["addBpReading"]>((systolic, diastolic, source) => {
+    const r: Reading = { id: `bp-${Date.now()}`, kind: "bp", systolic, diastolic, atMs: Date.now(), source };
+    setReadings((prev) => [r, ...prev].slice(0, 400));
+  }, []);
+
+  const addMeasurement = useCallback<GameContextValue["addMeasurement"]>((metricKey, value, source) => {
+    const m: Measurement = { id: `m-${Date.now()}`, metricKey, value, atMs: Date.now(), source };
+    setMeasurements((prev) => [m, ...prev].slice(0, 800));
   }, []);
 
   const toggleReminder = useCallback<GameContextValue["toggleReminder"]>((slotId) => {
     setReminders((prev) => (prev.includes(slotId) ? prev.filter((s) => s !== slotId) : [...prev, slotId]));
+  }, []);
+
+  const toggleMedication = useCallback<GameContextValue["toggleMedication"]>((drugId) => {
+    setMyMedications((prev) => (prev.includes(drugId) ? prev.filter((d) => d !== drugId) : [...prev, drugId]));
   }, []);
 
   const reset = useCallback(() => {
@@ -319,6 +357,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     readings,
     reminders,
     outbox,
+    myMedications,
+    measurements,
     ready,
     level,
     inRangeCount,
@@ -327,7 +367,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     pairDevice,
     unpairDevice,
     addReading,
+    addBpReading,
+    addMeasurement,
     toggleReminder,
+    toggleMedication,
     markSynced,
     logAction,
     completeLesson,
