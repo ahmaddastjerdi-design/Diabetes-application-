@@ -16,6 +16,7 @@ import { localCoachReply, coachReply } from "../lib/coach";
 import { validateGlucoseReading, classifyGlucose } from "../lib/health";
 import { pendingCount, devAuthHeaders } from "../lib/sync";
 import { readingToObservation } from "../lib/fhir";
+import { classifyGlucoseLevel, gmiPercent, ADA_TARGETS } from "../lib/ada";
 
 function simulate(actionIds: string[], days: number): BodyState {
   let state = initialBodyState();
@@ -95,6 +96,16 @@ expect("reading → FHIR Observation: LOINC glucose, mg/dL, patient subject + id
     obs.valueQuantity.unit === "mg/dL" &&
     obs.subject.reference === "Patient/p-1" &&
     obs.identifier?.[0].value === "r1");
+
+// ADA Standards of Care alignment (hypoglycemia levels, target range, GMI).
+expect("ADA: <54 is Level 2 hypoglycemia", classifyGlucoseLevel(50) === "level2");
+expect("ADA: 54–69 is Level 1 hypoglycemia", classifyGlucoseLevel(65) === "level1");
+expect("ADA: 70–180 is in target range", classifyGlucoseLevel(120) === "inRange");
+expect("ADA: 181–250 is high, >250 very high",
+  classifyGlucoseLevel(200) === "high" && classifyGlucoseLevel(300) === "veryHigh");
+expect("ADA: GMI from mean 154 mg/dL ≈ 7.0%", gmiPercent(154) === 7.0);
+expect("ADA: target list includes the 70–180 time-in-range goal",
+  ADA_TARGETS.some((t) => t.key === "tir" && t.target.includes("70")));
 
 // Coach orchestration: guardrails must run BEFORE any network call.
 async function runAsyncChecks() {

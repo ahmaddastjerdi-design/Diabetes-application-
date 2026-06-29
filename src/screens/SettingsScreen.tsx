@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useGame, ConditionType } from "../state/GameContext";
 import { GlucoseUnit } from "../lib/units";
 import { REMINDER_SLOTS } from "../lib/health";
+import { ADA_TARGETS, ADA_SCREENINGS, ADA_SOURCE } from "../lib/ada";
 import { syncAll, pendingCount } from "../lib/sync";
 import { Card, Button } from "../components/ui";
 import { theme } from "../theme";
@@ -73,6 +74,24 @@ export function SettingsScreen() {
           value={profile.glucoseUnit}
           onChange={(u) => updateProfile({ glucoseUnit: u })}
         />
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={styles.section}>Your targets (ADA-based)</Text>
+        {ADA_TARGETS.map((t) => (
+          <View key={t.key} style={styles.rowBetween}>
+            <View style={{ flex: 1, paddingRight: theme.space(2) }}>
+              <Text style={styles.targetLabel}>{t.label}</Text>
+              {t.note ? <Text style={styles.hint}>{t.note}</Text> : null}
+            </View>
+            <Text style={styles.targetValue}>{t.target}</Text>
+          </View>
+        ))}
+        <Text style={[styles.section, { marginTop: theme.space(1) }]}>Recommended check-ups</Text>
+        {ADA_SCREENINGS.map((s) => (
+          <Text key={s} style={styles.hint}>{`• ${s}`}</Text>
+        ))}
+        <Text style={[styles.hint, { marginTop: theme.space(1), fontStyle: "italic" }]}>{ADA_SOURCE}</Text>
       </Card>
 
       <Card style={styles.card}>
@@ -224,6 +243,8 @@ const styles = StyleSheet.create({
   chipOn: { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + "11" },
   chipText: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
   chipTextOn: { color: theme.colors.primary },
+  targetLabel: { fontSize: 13, fontWeight: "600", color: theme.colors.text },
+  targetValue: { fontSize: 13, fontWeight: "800", color: theme.colors.primary },
   urlInput: {
     backgroundColor: theme.colors.bg,
     borderRadius: theme.radius.md,
