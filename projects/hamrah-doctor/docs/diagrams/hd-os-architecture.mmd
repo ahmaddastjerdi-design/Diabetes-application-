@@ -1,0 +1,130 @@
+%% HD-OS System Architecture — C4 Container level (HDOS-DOC-004)
+%% Legend: solid = request/data flow · dotted = governed clinical-knowledge flow
+%% Rule: disease modules feed knowledge into CKE; they never fork the core.
+flowchart TB
+  %% ---------- Actors ----------
+  subgraph ACTORS["Actors"]
+    direction LR
+    PT["Patient"]
+    DR["Physician / Clinician"]
+    HOSP["Hospital / Org"]
+    RES["Researcher"]
+    INS["Insurance Org"]
+    MFG["Device Manufacturer"]
+  end
+
+  %% ---------- Applications ----------
+  subgraph APPS["Applications"]
+    direction LR
+    MOB["Flutter Patient App<br/>offline-first"]
+    WEB["Clinician Web Panel<br/>React + Material 3"]
+    ADM["Research / Admin Web"]
+  end
+
+  %% ---------- Edge ----------
+  BFF["API Gateway / BFF<br/>authN/Z · consent · rate-limit"]
+
+  %% ---------- Disease-agnostic Core ----------
+  subgraph CORE["Core Services — disease-agnostic (MDPF)"]
+    direction LR
+    IDS["Identity & Consent"]
+    DATA["Clinical Data Plane<br/>FHIR R4"]
+    SEC["Security & Audit<br/>hash-chained"]
+    NTF["Notifications"]
+  end
+
+  %% ---------- Clinical & AI Engines ----------
+  subgraph ENGINES["Clinical & AI Engines"]
+    direction LR
+    CKE["CKE<br/>Clinical Knowledge Engine"]
+    CDE["CDE<br/>Clinical Decision Engine<br/>deterministic safety"]
+    DTE["DTE<br/>Digital Twin Engine"]
+    AIC["AI Coach + Pipeline<br/>guardrails · explainability"]
+  end
+
+  %% ---------- Integration ----------
+  DGW["Device Gateway<br/>BLE/GATT · Health Connect"]
+
+  %% ---------- Pluggable disease modules ----------
+  subgraph MODULES["Disease Modules — pluggable"]
+    direction LR
+    DM["DM · Diabetes"]
+    CKD["CKD"]
+    MORE["future modules<br/>oncology · mental health · ..."]
+  end
+
+  %% ---------- Data ----------
+  DB[("PostgreSQL<br/>encrypted PHI + audit chain")]
+
+  %% ---------- External systems ----------
+  subgraph EXT["External Systems"]
+    direction LR
+    EHR["External EHR / HIE"]
+    IDP["Identity Provider<br/>OIDC · SMART on FHIR"]
+    LLM["LLM Provider<br/>BAA / DPA"]
+    DEVS["Medical Devices<br/>CGM · BGM · BP · scale · SpO2"]
+  end
+
+  %% ---------- Actor -> App / surface ----------
+  PT --> MOB
+  DR --> WEB
+  HOSP --> WEB
+  RES --> ADM
+  INS --> ADM
+  MFG --> DGW
+
+  %% ---------- App -> Edge ----------
+  MOB --> BFF
+  WEB --> BFF
+  ADM --> BFF
+
+  %% ---------- Edge -> Core / Engines ----------
+  BFF --> IDS
+  BFF --> DATA
+  BFF --> CDE
+  BFF --> NTF
+
+  %% ---------- Core wiring ----------
+  DATA --> DB
+  DATA --> SEC
+  IDS --> SEC
+  IDS -. enforces consent .-> DATA
+
+  %% ---------- Engine wiring ----------
+  CDE --> CKE
+  CDE --> DTE
+  CDE -->|red-flag escalation| NTF
+  AIC --> CDE
+  DTE --> DATA
+  AIC -->|de-identified, guardrailed prompts| LLM
+
+  %% ---------- Devices ----------
+  DEVS --> DGW --> DATA
+
+  %% ---------- Governed knowledge flow (never into app code) ----------
+  DM -. knowledge .-> CKE
+  CKD -. knowledge .-> CKE
+  MORE -. knowledge .-> CKE
+
+  %% ---------- External interop ----------
+  DATA -->|FHIR R4| EHR
+  BFF -->|OAuth2 / OIDC| IDP
+
+  %% ---------- Styling ----------
+  classDef actor fill:#E8F0FE,stroke:#4B6BFB,color:#1a2b6b;
+  classDef app fill:#E6F4EA,stroke:#34A853,color:#0d3b1e;
+  classDef edge fill:#FEF7E0,stroke:#F9AB00,color:#5c4400;
+  classDef core fill:#F3E8FD,stroke:#9334E6,color:#3d1466;
+  classDef engine fill:#FCE8E6,stroke:#EA4335,color:#5c130c;
+  classDef data fill:#E0F7FA,stroke:#00838F,color:#003b40;
+  classDef ext fill:#F1F3F4,stroke:#5F6368,color:#202124;
+  classDef module fill:#FFF0F6,stroke:#D81B7A,color:#5c0730;
+
+  class PT,DR,HOSP,RES,INS,MFG actor;
+  class MOB,WEB,ADM app;
+  class BFF edge;
+  class IDS,DATA,SEC,NTF core;
+  class CKE,CDE,DTE,AIC engine;
+  class DM,CKD,MORE module;
+  class DB data;
+  class EHR,IDP,LLM,DEVS,DGW ext;
