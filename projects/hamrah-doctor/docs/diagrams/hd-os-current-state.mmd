@@ -1,0 +1,75 @@
+%% HD-OS — CURRENT STATE of the repository (what exists today)
+%% Green = authored & committed · Grey/dashed = registered but not yet written
+%% Phase D0 (documentation-first). No product/Flutter code yet (gate holds).
+flowchart TB
+  ROOT["projects/hamrah-doctor/<br/>(incubation home · extraction-ready)"]
+
+  %% ---------- Read-first spine (authored) ----------
+  subgraph SPINE["Read-order spine — AUTHORED"]
+    direction TB
+    META["HDOS-DOC-000<br/>HD-OS-Meta-Specification.md<br/>project DNA · read first"]
+    CLAUDE["HDOS-DOC-001<br/>CLAUDE.md<br/>Engineering Constitution · 23 sections"]
+    CONST["HDOS-DOC-002<br/>Constitution.md<br/>Articles I-XII · decision rights"]
+    ARCH["HDOS-DOC-004<br/>System-Architecture.md<br/>C4 · engines · MDPF · stack"]
+    UI["HDOS-DOC-011<br/>UI-Design-System.md<br/>Flutter · M3 tokens · data-viz"]
+    META --> CLAUDE --> ARCH
+    CLAUDE -.-> CONST
+  end
+
+  %% ---------- Supporting artifacts (authored) ----------
+  subgraph SUPPORT["Supporting artifacts — AUTHORED"]
+    direction TB
+    REG["docs/README.md<br/>document register"]
+    RMS["docs/registry/requirements.md<br/>RMS · 4 seed requirement IDs"]
+    ADRI["docs/adr/README.md<br/>ADR index"]
+    ADR1["ADR-0001<br/>technology stack (Flutter)"]
+    ADR2["ADR-0002<br/>hexagonal core"]
+    DIAG["docs/diagrams/<br/>hd-os-architecture.mmd"]
+    STATE["PROJECT_STATE.md<br/>Aegis-OS memory · spine ~62%"]
+    ADRI --> ADR1
+    ADRI --> ADR2
+  end
+
+  %% ---------- Planned (not yet written) ----------
+  subgraph PLANNED["Registered but NOT YET WRITTEN"]
+    direction TB
+    VIS["HDOS-DOC-003<br/>Product-Vision"]
+    CLIN["HDOS-DOC-005<br/>Clinical-Architecture"]
+    DBD["HDOS-DOC-006<br/>Database-Architecture"]
+    FHIR["HDOS-DOC-007<br/>FHIR-Profiling"]
+    SECD["HDOS-DOC-009<br/>Security-Architecture"]
+    AID["HDOS-DOC-010<br/>AI-System"]
+    A11Y["HDOS-DOC-012<br/>Accessibility"]
+    QA["HDOS-DOC-013<br/>QA / Testing"]
+    OPS["HDOS-DOC-014<br/>DevOps / Release"]
+    CKESTD["Clinical-Knowledge Standards<br/>(CKE governance)"]
+    CONTRIB["Contribution Guide"]
+  end
+
+  %% ---------- Not started ----------
+  CODE["Product code<br/>Flutter app · services · engines<br/>GATE: begins after foundation approved"]
+
+  %% ---------- Structure edges ----------
+  ROOT --> SPINE
+  ROOT --> SUPPORT
+  ROOT --> PLANNED
+  ROOT -. gated .-> CODE
+
+  REG -.-> SPINE
+  REG -.-> PLANNED
+  ARCH --> ADRI
+  UI -.-> DIAG
+  ARCH --> DIAG
+
+  %% ---------- Styling ----------
+  classDef done fill:#E6F4EA,stroke:#34A853,color:#0d3b1e;
+  classDef support fill:#E8F0FE,stroke:#4B6BFB,color:#1a2b6b;
+  classDef planned fill:#F1F3F4,stroke:#9AA0A6,color:#3c4043,stroke-dasharray:5 4;
+  classDef gate fill:#FCE8E6,stroke:#EA4335,color:#5c130c,stroke-dasharray:5 4;
+  classDef root fill:#FEF7E0,stroke:#F9AB00,color:#5c4400;
+
+  class ROOT root;
+  class META,CLAUDE,CONST,ARCH,UI done;
+  class REG,RMS,ADRI,ADR1,ADR2,DIAG,STATE support;
+  class VIS,CLIN,DBD,FHIR,SECD,AID,A11Y,QA,OPS,CKESTD,CONTRIB planned;
+  class CODE gate;
