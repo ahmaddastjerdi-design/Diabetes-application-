@@ -8,11 +8,11 @@
 # PROJECT_STATE.md — HD-OS (Hamrah Doctor Operating System)
 
 ## 1. Overall Completion Radar
-- **Current Progress:** ~9% (of the full platform); **Foundational-docs spine: ~55%**
+- **Current Progress:** ~11% (of the full platform); **Foundational-docs spine: ~62%**
 - **Current Active Phase:** Phase D0 — Engineering Foundation (documentation-first)
-- **Next Immediate Dependency:** remaining CTO foundational set — Coding Standards,
-  Clinical-Knowledge, FHIR-Profiling, UI-Design-System, Testing, Security standards,
-  Contribution Guide (`HDOS-DOC-003` Product-Vision may be authored in parallel).
+- **Next Immediate Dependency:** Clinical-Knowledge Standards (CKE governance) +
+  FHIR-Profiling Standards — the clinical-work unblockers; then Testing, Security,
+  Contribution Guide. Stack confirmed **Flutter** (ADR-0001 unchanged).
 
 > Gate (CTO directive): **no Flutter/product code is written until the foundational
 > document set is authored and approved.** Percentages here measure the
@@ -39,10 +39,10 @@
 3. [x] Documentation register + requirements registry (RMS, domain-segmented IDs).
 4. [x] `HDOS-DOC-002` Constitution (values, patient rights, charters, decision rights).
 5. [x] `HDOS-DOC-004` System-Architecture (C4, engines, MDPF, ratified stack) + ADR-0001/0002.
-6. [ ] Coding Standards elaboration + Clinical-Knowledge Standards (CKE governance).
-7. [ ] FHIR-Profiling Standards · UI Design System · Testing Standards · Security
-   Standards · Contribution Guide (remaining CTO foundational set).
-8. [ ] `HDOS-DOC-003` Product-Vision (may run in parallel).
+6. [x] `HDOS-DOC-011` UI Design System (Flutter-first; tokens, `UI_` components, data-viz).
+7. [ ] Clinical-Knowledge Standards (CKE governance) + FHIR-Profiling Standards.
+8. [ ] Testing Standards · Security Standards · Contribution Guide (remaining set).
+9. [ ] `HDOS-DOC-003` Product-Vision (may run in parallel).
 
 ## 4. Architectural System Inventory
 Status: **Authored** = written, review pending · **Planned** = registered, not written.
@@ -59,7 +59,9 @@ Status: **Authored** = written, review pending · **Planned** = registered, not 
 - `docs/004-System-Architecture.md` (`HDOS-DOC-004`, C4 L1/L2, CKE/CDE/DTE, AI/data/
   security planes, MDPF, ratified stack, ADR index): **Authored**.
 - `docs/adr/` — ADR-0001 (stack), ADR-0002 (hexagonal core) + index: **Authored**.
-- `HDOS-DOC-003, 005 … 014+`: **Planned** (registered in `docs/README.md`).
+- `docs/011-UI-Design-System.md` (`HDOS-DOC-011`, Flutter-first tokens/components/
+  data-viz/a11y): **Authored**.
+- `HDOS-DOC-003, 005, 006, 007, 009, 010, 012, 013, 014`: **Planned**.
 
 ## 5. Blockers & Edge Cases Addressed
 - **Repository provisioning blocked** → this session's GitHub token is scoped to a

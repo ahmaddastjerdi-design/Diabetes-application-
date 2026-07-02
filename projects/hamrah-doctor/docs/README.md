@@ -37,7 +37,7 @@
 | 008 | `HDOS-DOC-008` | API-Architecture.md | Contract-first API standards, OpenAPI/CapabilityStatement, versioning. | PLANNED |
 | 009 | `HDOS-DOC-009` | Security-Architecture.md | HIPAA/GDPR/ISO 27001 controls, STRIDE threat models, IR plan. | PLANNED |
 | 010 | `HDOS-DOC-010` | AI-System-Architecture.md | AI Health Coach: guardrails, grounding, evals, model governance. | PLANNED |
-| 011 | `HDOS-DOC-011` | Design-System.md | Material 3 tokens, component library, RTL/dark, data-viz language. | PLANNED |
+| 011 | `HDOS-DOC-011` | [UI Design System](./011-UI-Design-System.md) | Flutter-first Material 3 tokens, `UI_` component library, RTL/dark, clinical data-viz, a11y. | **DRAFT** |
 | 012 | `HDOS-DOC-012` | Accessibility-Standard.md | WCAG 2.2 AA conformance approach and test plan. | PLANNED |
 | 013 | `HDOS-DOC-013` | QA-Test-Strategy.md | Test pyramid, coverage/eval gates, RTM process, CI gates. | PLANNED |
 | 014 | `HDOS-DOC-014` | DevOps-Release.md | Environments, release gates, DHF, rollback, post-market surveillance. | PLANNED |
