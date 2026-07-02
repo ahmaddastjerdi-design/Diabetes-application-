@@ -8,10 +8,11 @@
 # PROJECT_STATE.md — HD-OS (Hamrah Doctor Operating System)
 
 ## 1. Overall Completion Radar
-- **Current Progress:** ~6% (of the full platform); **Foundational-docs spine: ~35%**
+- **Current Progress:** ~9% (of the full platform); **Foundational-docs spine: ~55%**
 - **Current Active Phase:** Phase D0 — Engineering Foundation (documentation-first)
-- **Next Immediate Dependency:** `HDOS-DOC-002` Constitution, then `HDOS-DOC-004`
-  System-Architecture (which ratifies stack + repo structure + ADR index).
+- **Next Immediate Dependency:** remaining CTO foundational set — Coding Standards,
+  Clinical-Knowledge, FHIR-Profiling, UI-Design-System, Testing, Security standards,
+  Contribution Guide (`HDOS-DOC-003` Product-Vision may be authored in parallel).
 
 > Gate (CTO directive): **no Flutter/product code is written until the foundational
 > document set is authored and approved.** Percentages here measure the
@@ -36,10 +37,12 @@
 1. [x] `HDOS-DOC-000` Meta Specification (project DNA) → Verify: peer/clinical review.
 2. [x] `HDOS-DOC-001` CLAUDE.md Engineering Constitution → Verify: review.
 3. [x] Documentation register + requirements registry (RMS, domain-segmented IDs).
-4. [ ] `HDOS-DOC-002` Constitution (values, decision rights, non-negotiables).
-5. [ ] `HDOS-DOC-004` System-Architecture (C4, ratified stack, ADR index).
-   - then: Clinical-Knowledge, FHIR-Profiling, UI-Design-System, Testing,
-     Security standards, Contribution Guide (CTO foundational set).
+4. [x] `HDOS-DOC-002` Constitution (values, patient rights, charters, decision rights).
+5. [x] `HDOS-DOC-004` System-Architecture (C4, engines, MDPF, ratified stack) + ADR-0001/0002.
+6. [ ] Coding Standards elaboration + Clinical-Knowledge Standards (CKE governance).
+7. [ ] FHIR-Profiling Standards · UI Design System · Testing Standards · Security
+   Standards · Contribution Guide (remaining CTO foundational set).
+8. [ ] `HDOS-DOC-003` Product-Vision (may run in parallel).
 
 ## 4. Architectural System Inventory
 Status: **Authored** = written, review pending · **Planned** = registered, not written.
@@ -51,7 +54,12 @@ Status: **Authored** = written, review pending · **Planned** = registered, not 
 - `docs/README.md` (document register, incl. Doc 000): **Authored**.
 - `docs/registry/requirements.md` (RMS; seeds HD-REQ-PLAT-000001/2, HD-CLIN-PLAT-000001,
   HD-TEST-CDE-000001): **Authored**.
-- `HDOS-DOC-002 … 014+`: **Planned** (registered in `docs/README.md`).
+- `docs/002-HDOS-Constitution.md` (`HDOS-DOC-002`, Articles I–XII + decision-rights
+  matrix + amendment process): **Authored** (review/ratification pending).
+- `docs/004-System-Architecture.md` (`HDOS-DOC-004`, C4 L1/L2, CKE/CDE/DTE, AI/data/
+  security planes, MDPF, ratified stack, ADR index): **Authored**.
+- `docs/adr/` — ADR-0001 (stack), ADR-0002 (hexagonal core) + index: **Authored**.
+- `HDOS-DOC-003, 005 … 014+`: **Planned** (registered in `docs/README.md`).
 
 ## 5. Blockers & Edge Cases Addressed
 - **Repository provisioning blocked** → this session's GitHub token is scoped to a
@@ -69,8 +77,8 @@ Status: **Authored** = written, review pending · **Planned** = registered, not 
   *toward* a regulated posture; clinical/device claims require the §5/§20/Ch.13 gates.
 
 ---
-_Last synchronized: 2026-07-02. This turn: authored HDOS-DOC-000 (Meta Spec) and
-reconciled HDOS-DOC-001 (CLAUDE.md), the register, and the RMS registry to the HD-OS
-canon (name, audience, domain-segmented IDs, Prime Directives, read order). No code
-written (D0 gate). Repo creation attempted and blocked (403); work incubates in
-subfolder, extraction-ready._
+_Last synchronized: 2026-07-02. Recent turns: authored HDOS-DOC-000 (Meta Spec),
+reconciled HDOS-DOC-001 (CLAUDE.md), then authored HDOS-DOC-002 (Constitution) and
+HDOS-DOC-004 (System-Architecture) with seed ADR-0001/0002. No code written (D0
+gate). Repo creation attempted and blocked (403); work incubates in subfolder,
+extraction-ready._

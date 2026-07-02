@@ -28,9 +28,9 @@
 |---|----|----------|---------|--------|
 | 000 | `HDOS-DOC-000` | [HD-OS Meta Specification](../HD-OS-Meta-Specification.md) | Project DNA — **read first**: identity, philosophy, naming, hierarchies, flows, Prime Directives, success, MDPF vision. | **DRAFT** |
 | 001 | `HDOS-DOC-001` | [CLAUDE.md — Engineering Constitution](../CLAUDE.md) | Operational engineering constitution; loaded first by Claude Code, binds to the Meta Spec. | **DRAFT** |
-| 002 | `HDOS-DOC-002` | HDOS-Constitution.md | Product & organisational constitution: values, non-negotiables, decision rights. | PLANNED |
+| 002 | `HDOS-DOC-002` | [HD-OS Constitution](./002-HDOS-Constitution.md) | Values, patient rights, clinical & AI charters, governance & decision rights, amendment process. | **DRAFT** |
 | 003 | `HDOS-DOC-003` | Product-Vision.md | Vision, personas, scope, business goals, KPIs, roadmap. | PLANNED |
-| 004 | `HDOS-DOC-004` | System-Architecture.md | End-to-end system architecture (C4), ratified stack, ADR index. | PLANNED |
+| 004 | `HDOS-DOC-004` | [System-Architecture](./004-System-Architecture.md) | End-to-end architecture (C4), ratified stack, core/engines/modules, ADR index. | **DRAFT** |
 | 005 | `HDOS-DOC-005` | Clinical-Architecture.md | Clinical model, decision-support framing, ISO 14971 risk framework. | PLANNED |
 | 006 | `HDOS-DOC-006` | Database-Architecture.md | Data model, schema conventions, PHI encryption, retention/DSAR. | PLANNED |
 | 007 | `HDOS-DOC-007` | FHIR-Architecture.md | FHIR R4 profiles, terminology bindings, mapping tables. | PLANNED |
