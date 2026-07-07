@@ -67,6 +67,10 @@ src/
     useHealthConnect.ts     Hook: status, permission, today's steps
     haptics.ts              Guarded expo-haptics wrapper
     notifications.ts        Guarded local medication reminders
+  phr/
+    records.ts              Personal Health Record model + pure helpers
+    PhrRepository.ts        PHR persistence layer (AsyncStorage, injectable)
+    usePhr.ts               Hook: load-once-then-mutate PHR state
   state/
     GameContext.tsx         Single source of truth, persisted via AsyncStorage
   components/
