@@ -1,0 +1,80 @@
+/* Reset + base element styling. Uses logical properties so RTL works for free. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  font-family: var(--hp-font);
+  color: var(--hp-text);
+  background: var(--hp-bg);
+  -webkit-text-size-adjust: 100%;
+  line-height: 1.5;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4 { line-height: 1.25; font-weight: 700; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button { cursor: pointer; }
+
+a { color: var(--hp-primary-strong); }
+
+:focus-visible {
+  outline: 3px solid var(--hp-primary);
+  outline-offset: 2px;
+  border-radius: var(--hp-radius-sm);
+}
+
+/* Respect reduced-motion everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen-reader-only utility. */
+.hp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link */
+.hp-skip-link {
+  position: absolute;
+  inset-inline-start: var(--hp-space-3);
+  inset-block-start: -60px;
+  z-index: 100;
+  background: var(--hp-surface);
+  color: var(--hp-text);
+  padding: var(--hp-space-2) var(--hp-space-4);
+  border-radius: var(--hp-radius-sm);
+  box-shadow: var(--hp-shadow-2);
+  transition: inset-block-start 0.15s ease;
+}
+.hp-skip-link:focus {
+  inset-block-start: var(--hp-space-3);
+}
