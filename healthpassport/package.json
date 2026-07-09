@@ -1,0 +1,22 @@
+{
+  "name": "healthpassport-pro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HealthPassport Pro — a production-grade PWA for personal health records and interactive chronic disease care.",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm --workspace @healthpassport/web run dev",
+    "build": "npm --workspace @healthpassport/web run build",
+    "preview": "npm --workspace @healthpassport/web run preview",
+    "typecheck": "npm --workspace @healthpassport/web run typecheck",
+    "test": "npm --workspace @healthpassport/web run test",
+    "lint": "npm --workspace @healthpassport/web run lint"
+  }
+}

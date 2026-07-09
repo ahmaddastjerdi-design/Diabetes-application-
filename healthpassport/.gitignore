@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Vite / PWA generated
+apps/web/dev-dist/
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
+
+# Test / coverage
+coverage/
+.vitest/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
+
+# Env / secrets (none needed in Phase 1, but never commit any)
+.env
+.env.*
+!.env.example
