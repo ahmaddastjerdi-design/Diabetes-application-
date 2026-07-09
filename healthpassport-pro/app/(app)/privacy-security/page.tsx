@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Download, FileJson } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { getConsents } from '@/lib/data/profile';
 import { prisma } from '@/lib/db/prisma';
 import { PageHeader } from '@/components/layout/page-header';
 import { OfflineConsentToggle } from '@/components/privacy/offline-consent-toggle';
-import { MedicalDisclaimer } from '@/components/safety/medical-disclaimer';
+import { ChangePasswordForm } from '@/components/privacy/change-password-form';
+import { DeleteAccount } from '@/components/privacy/delete-account';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
 
 export const metadata: Metadata = { title: 'Privacy and security' };
 
@@ -66,13 +68,52 @@ export default async function PrivacySecurityPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Your data</CardTitle>
+            <CardTitle>Password</CardTitle>
             <CardDescription>
-              Export and permanent erasure are added in a later phase (Phase 8/10).
+              Choose a strong password you don&apos;t use elsewhere.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MedicalDisclaimer variant="compact" />
+            <ChangePasswordForm />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Export your data</CardTitle>
+            <CardDescription>
+              Download a portable copy of your record at any time.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/api/export?format=summary"
+                className={buttonVariants({ variant: 'outline' })}
+                download
+              >
+                <Download aria-hidden /> Health summary (JSON)
+              </a>
+              <a
+                href="/api/export?format=fhir"
+                className={buttonVariants({ variant: 'outline' })}
+                download
+              >
+                <FileJson aria-hidden /> FHIR bundle (JSON)
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Delete your account</CardTitle>
+            <CardDescription>
+              Permanently erase your account and all health records. This cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DeleteAccount />
           </CardContent>
         </Card>
       </div>
