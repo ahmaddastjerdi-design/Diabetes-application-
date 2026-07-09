@@ -31,6 +31,14 @@ describe('profileSchema', () => {
       expect(r.data.birthDate).toBeUndefined();
     }
   });
+
+  it('treats a blank height as not provided (onboarding must not block)', () => {
+    // Regression: an empty number input is '' which Number() coerces to 0;
+    // that must not fail min() and stall the onboarding wizard.
+    const r = profileSchema.safeParse({ givenName: 'Sam', heightCm: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.heightCm).toBeUndefined();
+  });
 });
 
 describe('emergencyContactSchema', () => {

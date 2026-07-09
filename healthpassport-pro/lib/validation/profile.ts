@@ -20,12 +20,21 @@ export const profileSchema = z.object({
     .transform((v) => (v ? v : undefined)),
   sex: z.enum(['male', 'female', 'other', 'prefer_not']).optional(),
   preferredLanguage: z.enum(['en', 'fa']).optional(),
-  heightCm: z
-    .coerce.number()
-    .min(30, 'Check the value')
-    .max(272, 'Check the value')
-    .optional()
-    .or(z.nan().transform(() => undefined)),
+  // An empty number input yields '' (which Number() coerces to 0). Normalize
+  // any empty/blank value to undefined *before* coercion so leaving height blank
+  // is treated as "not provided" rather than 0 (which would fail min() and, in
+  // the onboarding wizard, silently block the "Continue" step).
+  heightCm: z.preprocess(
+    (v) =>
+      v === '' || v === null || v === undefined || Number.isNaN(v)
+        ? undefined
+        : v,
+    z.coerce
+      .number()
+      .min(30, 'Check the value')
+      .max(272, 'Check the value')
+      .optional(),
+  ),
   unitsSystem: z.enum(['METRIC', 'IMPERIAL']).default('METRIC'),
 });
 
