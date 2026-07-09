@@ -8,6 +8,22 @@ export function formatDate(d: Date | null | undefined): string {
   }).format(d);
 }
 
+/** Compact date+time, e.g. "Jul 9, 3:20 PM". */
+export function formatDateTime(d: Date | null | undefined): string {
+  if (!d) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d);
+}
+
+/** Short chart-axis label, e.g. "7/9". */
+export function shortDate(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 const TITLE_CASE: Record<string, string> = {
   ACTIVE: 'Active',
   RESOLVED: 'Resolved',
