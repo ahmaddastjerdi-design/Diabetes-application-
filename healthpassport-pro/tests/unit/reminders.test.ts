@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { reminderSchema } from '@/lib/validation/reminders';
 import { computeAdherence } from '@/lib/reminders/adherence';
+import { suggestPreventive } from '@/lib/reminders/preventive';
 
 describe('reminderSchema', () => {
   it('accepts a valid medication reminder', () => {
@@ -66,5 +67,71 @@ describe('computeAdherence', () => {
       { date: d('2026-07-08'), medicationTaken: true },
     ]);
     expect(a.streak).toBe(0);
+  });
+});
+
+describe('suggestPreventive', () => {
+  const today = new Date('2026-07-09');
+  const keys = (r: { key: string }[]) => r.map((s) => s.key).sort();
+
+  it('suggests nothing without relevant conditions', () => {
+    expect(
+      suggestPreventive({ modules: [], labDates: {}, bpFlagged: false, today }),
+    ).toEqual([]);
+  });
+
+  it('suggests HbA1c, eye exam, kidney and lipid for diabetes with no labs', () => {
+    const r = suggestPreventive({
+      modules: ['diabetes'],
+      labDates: {},
+      bpFlagged: false,
+      today,
+    });
+    expect(keys(r)).toEqual(['eye-exam', 'hba1c', 'kidney', 'lipid']);
+    // every suggestion carries a citation
+    expect(r.every((s) => s.citation.length > 0)).toBe(true);
+  });
+
+  it('drops HbA1c when it was recorded recently', () => {
+    const recent = new Date('2026-06-29'); // 10 days ago
+    const r = suggestPreventive({
+      modules: ['diabetes'],
+      labDates: { HBA1C: recent, EGFR: recent, LDL: recent },
+      bpFlagged: false,
+      today,
+    });
+    const k = keys(r);
+    expect(k).not.toContain('hba1c');
+    expect(k).not.toContain('kidney');
+    expect(k).not.toContain('lipid');
+    expect(k).toContain('eye-exam'); // standing annual recommendation
+  });
+
+  it('suggests a BP recheck only when the latest reading is flagged', () => {
+    const flagged = suggestPreventive({
+      modules: ['hypertension'],
+      labDates: {},
+      bpFlagged: true,
+      today,
+    });
+    expect(keys(flagged)).toContain('bp-recheck');
+
+    const ok = suggestPreventive({
+      modules: ['hypertension'],
+      labDates: {},
+      bpFlagged: false,
+      today,
+    });
+    expect(keys(ok)).not.toContain('bp-recheck');
+  });
+
+  it('produces unique keys', () => {
+    const r = suggestPreventive({
+      modules: ['diabetes', 'ckd', 'dyslipidemia'],
+      labDates: {},
+      bpFlagged: false,
+      today,
+    });
+    expect(new Set(keys(r)).size).toBe(r.length);
   });
 });

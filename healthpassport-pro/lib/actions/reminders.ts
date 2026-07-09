@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit/audit';
 import {
   createReminder,
+  getPreventiveSuggestions,
   setReminderActive,
   softDeleteReminder,
 } from '@/lib/data/reminders';
@@ -51,6 +52,36 @@ export async function toggleReminderAction(
     entityType: 'Reminder',
     entityId: id,
     metadata: { active },
+  });
+  revalidate();
+  return { ok: true };
+}
+
+/**
+ * Accept a smart preventive suggestion by key. The suggestion is re-derived
+ * server-side (never trust the client for its title/citation), then saved as a
+ * PREVENTIVE reminder tagged `[auto:<key>]` so it won't be suggested again.
+ */
+export async function acceptSuggestionAction(key: string): Promise<FormResult> {
+  const user = await requireUser();
+  const suggestion = (await getPreventiveSuggestions(user.id)).find(
+    (s) => s.key === key,
+  );
+  if (!suggestion) {
+    return { error: 'That suggestion is no longer applicable.' };
+  }
+  const created = await createReminder(user.id, {
+    type: 'PREVENTIVE',
+    label: suggestion.title,
+    schedule: suggestion.cadence,
+    notes: `[auto:${suggestion.key}] ${suggestion.detail}`,
+  });
+  await recordAudit({
+    userId: user.id,
+    action: 'CREATE',
+    entityType: 'Reminder',
+    entityId: created.id,
+    metadata: { preventive: suggestion.key },
   });
   revalidate();
   return { ok: true };

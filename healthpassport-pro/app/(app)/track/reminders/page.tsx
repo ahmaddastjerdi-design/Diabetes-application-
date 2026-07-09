@@ -1,13 +1,19 @@
 import type { Metadata } from 'next';
-import { Bell, CalendarClock, Pill, ShieldCheck, Activity } from 'lucide-react';
+import { Bell, CalendarClock, Pill, ShieldCheck, Activity, Sparkles } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
-import { listReminders, getAdherence } from '@/lib/data/reminders';
+import {
+  listReminders,
+  getAdherence,
+  getPreventiveSuggestions,
+} from '@/lib/data/reminders';
 import { listMedications } from '@/lib/data/records';
 import { PageHeader } from '@/components/layout/page-header';
+import { MedicalDisclaimer } from '@/components/safety/medical-disclaimer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/health/status-badge';
 import { AddReminderForm } from '@/components/reminders/add-reminder-form';
 import { ReminderControls } from '@/components/reminders/reminder-controls';
+import { AcceptSuggestionButton } from '@/components/reminders/accept-suggestion-button';
 import type { ReminderType } from '@prisma/client';
 
 export const metadata: Metadata = { title: 'Reminders' };
@@ -27,10 +33,11 @@ const TYPE_LABEL: Record<ReminderType, string> = {
 
 export default async function RemindersPage() {
   const user = await requireUser();
-  const [reminders, meds, adherence] = await Promise.all([
+  const [reminders, meds, adherence, suggestions] = await Promise.all([
     listReminders(user.id),
     listMedications(user.id),
     getAdherence(user.id),
+    getPreventiveSuggestions(user.id),
   ]);
 
   const medNames = meds
@@ -94,6 +101,34 @@ export default async function RemindersPage() {
             </p>
           </CardContent>
         </Card>
+
+        {suggestions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles aria-hidden className="size-4 text-primary" />
+                Suggested for you
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <MedicalDisclaimer variant="compact" />
+              <ul className="divide-y">
+                {suggestions.map((s) => (
+                  <li key={s.key} className="flex items-start justify-between gap-4 py-3 first:pt-0">
+                    <div className="min-w-0">
+                      <div className="font-medium">{s.title}</div>
+                      <div className="text-sm text-muted-foreground">{s.detail}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {s.cadence} · {s.citation}
+                      </div>
+                    </div>
+                    <AcceptSuggestionButton suggestionKey={s.key} />
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
