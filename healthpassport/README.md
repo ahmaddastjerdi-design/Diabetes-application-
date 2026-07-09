@@ -92,7 +92,19 @@ npm run preview      # serve the production build locally
 
 ## Status
 
-Phase 1 (patient PWA MVP) — under active development. Every major phase lands as
-a discrete, reviewable commit. This is a real product foundation, not a demo:
-the architecture, security model, and clinical-safety layer are first-class from
-commit one.
+**Phase 1 (patient PWA MVP) — complete and launchable.** A patient can install
+the app, set a passphrase, keep an encrypted health record offline, track
+diabetes and blood pressure against targets, receive red-flag escalation and
+safe education, and export a physician-ready report + FHIR Bundle — all on-device.
+
+- **45 tests** cover crypto, the encrypted store + audit chain, the safety
+  engine, chronic-care analytics, FHIR export, and the onboarding flow.
+- `typecheck`, `lint`, `test`, and `build` are green; **0 npm audit
+  vulnerabilities**; CI runs all of the above.
+- The critical path (onboarding → persist → lock → decrypt) is verified in a real
+  browser.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the full Phase-1 feature list and
+[`docs/ROADMAP.md`](docs/ROADMAP.md) for what comes next (backend/sync, physician
+platform, DSS). Every major phase landed as a discrete, reviewable commit — this
+is a real product foundation, not a demo.

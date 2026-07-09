@@ -13,13 +13,14 @@ Goal: a private, offline-first, clinically-safe personal health record with
 chronic-disease tracking, education, and physician-ready reports.
 
 - [x] Architecture, security, clinical-safety, interoperability foundations (docs)
-- [ ] Installable PWA shell (offline, service worker, i18n/RTL)
-- [ ] FHIR-aligned domain model + encrypted offline store + audit log
-- [ ] Core PHR: profile, observations/vitals, conditions, medications, allergies
-- [ ] Chronic-care module: diabetes + hypertension tracking, targets, trends
-- [ ] Clinical-safety engine: red-flag escalation, disclaimers, guarded education
-- [ ] Physician-ready report + FHIR Bundle export
-- [ ] Accessibility (WCAG 2.2 AA pass), security hardening, CI
+- [x] Installable PWA shell (offline, service worker, i18n/RTL)
+- [x] FHIR-aligned domain model + encrypted offline store + audit log
+- [x] Core PHR: profile, observations/vitals, conditions, medications, allergies
+- [x] Chronic-care module: diabetes + hypertension tracking, targets, trends
+- [x] Clinical-safety engine: red-flag escalation, disclaimers, guarded education
+- [x] Physician-ready report + FHIR Bundle export
+- [x] Security hardening (headers/CSP, idle auto-lock) + CI
+- [ ] Formal accessibility audit (WCAG 2.2 AA) and clinician content sign-off (Phase 2)
 
 **Exit criteria**: a patient can install the app, record their record offline
 with PHI encrypted at rest, track diabetes/BP against targets, receive safe

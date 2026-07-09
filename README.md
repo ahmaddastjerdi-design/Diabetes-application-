@@ -11,6 +11,13 @@ medication** ripple through their body and affect organs like the **heart** and
 > physiological model is an intentionally simplified teaching simulation. All
 > content must be reviewed by a clinician before any real-world release.
 
+> 🩺 **Also in this repo: [HealthPassport Pro](./healthpassport/)** — a
+> production-grade, offline-first **PWA** for personal health records and
+> chronic-disease care (encrypted on-device storage, FHIR R4 export, a
+> clinical-safety engine, and physician-ready reports). It is a separate,
+> self-contained product under [`healthpassport/`](./healthpassport/) and does
+> not affect this Expo app.
+
 ---
 
 ## The idea
