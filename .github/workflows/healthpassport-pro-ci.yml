@@ -83,3 +83,10 @@ jobs:
           name: playwright-report
           path: healthpassport-pro/playwright-report
           retention-days: 7
+      - name: Upload app screenshots
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: app-screenshots
+          path: healthpassport-pro/screenshots
+          retention-days: 14

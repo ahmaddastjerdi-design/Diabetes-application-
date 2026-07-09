@@ -26,6 +26,7 @@ next-env.d.ts
 /playwright-report
 /test-results
 /.playwright
+/screenshots
 
 # TypeScript
 *.tsbuildinfo
