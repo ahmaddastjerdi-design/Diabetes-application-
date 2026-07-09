@@ -1,14 +1,34 @@
 import type { Metadata } from 'next';
-import { PlaceholderPage } from '@/components/layout/placeholder-page';
+import { requireUser } from '@/lib/auth/session';
+import { listEncounters } from '@/lib/data/records';
+import { formatDate, humanizeEnum } from '@/lib/utils/format';
+import { PageHeader } from '@/components/layout/page-header';
+import { RecordSection } from '@/components/records/record-section';
+import { AddEncounterForm } from '@/components/records/add-encounter-form';
 
 export const metadata: Metadata = { title: 'Encounters' };
 
-export default function EncountersPage() {
+export default async function EncountersPage() {
+  const user = await requireUser();
+  const encounters = await listEncounters(user.id);
+  const items = encounters.map((e) => ({
+    id: e.id,
+    title: `${humanizeEnum(e.type)} — ${formatDate(e.occurredAt)}`,
+    meta: [e.provider ?? '', e.reason ?? '', e.summary ?? '']
+      .filter(Boolean)
+      .join(' · '),
+  }));
+
   return (
-    <PlaceholderPage
-      title="Encounters"
-      description="Your visits and appointments."
-      phaseNote="Encounters are built in Phase 4."
-    />
+    <>
+      <PageHeader title="Encounters" description="Your visits and appointments." />
+      <RecordSection
+        items={items}
+        model="encounter"
+        addTitle="Add a visit"
+        addForm={<AddEncounterForm />}
+        emptyText="No visits recorded yet."
+      />
+    </>
   );
 }
