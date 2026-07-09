@@ -23,6 +23,9 @@ next-env.d.ts
 # Test / coverage
 /coverage
 .vitest/
+/playwright-report
+/test-results
+/.playwright
 
 # TypeScript
 *.tsbuildinfo

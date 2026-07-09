@@ -69,3 +69,25 @@ Legend: ☐ to build · ☑ verified (updated as phases land and in Phase 10 aud
 - ☐ Manual: keyboard-only pass, screen-reader pass (VoiceOver/NVDA), 200% zoom,
   contrast audit on every screen.
 - ☐ Elderly-friendly review: tap targets, legibility, one primary action/screen.
+
+---
+
+## Implementation status (as of Phase 10)
+
+**Implemented**
+- Semantic HTML landmarks (header/nav/main/footer), per-page `<title>`, one `h1`.
+- Labelled form fields (RHF + `Field`), `aria-invalid` + `role="alert"` errors,
+  correct `type`/`inputmode`/`autocomplete`.
+- Keyboard operability, visible focus ring (`focus-visible`), skip-to-content
+  link; ≥44px touch targets (Button/Input sizing).
+- Color-plus-icon-plus-text status (`StatusBadge`) — never color-only.
+- Light/dark themes; `prefers-reduced-motion` respected globally.
+- `aria-live`/`role` on status, success, error, and safety escalations.
+- **Automated axe checks** on public pages in the Playwright e2e suite (fails on
+  serious/critical WCAG 2 A/AA violations).
+
+**Tracked follow-ups**
+- Full manual screen-reader + 200% zoom pass on authenticated screens.
+- Recharts text-alternative/data-table parity (charts currently carry an
+  `aria-label`/`figcaption` summary; add an accessible data table).
+- Elderly-friendly review (target sizes, legibility, one-primary-action).

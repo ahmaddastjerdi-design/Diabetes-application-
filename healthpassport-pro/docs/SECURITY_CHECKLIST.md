@@ -91,3 +91,31 @@ V1 targets **ASVS Level 2** thinking for a PHI-handling app: strong auth (V2),
 session management (V3), access control (V4), validation/encoding (V5),
 stored-secret handling (V6), error/logging (V7), data protection & privacy (V8/V9),
 and configuration (V14). Level attainment is verified pre-launch.
+
+---
+
+## Implementation status (as of Phase 10)
+
+**Implemented**
+- Auth: Auth.js credentials, bcrypt (cost 12), JWT sessions, httpOnly/sameSite
+  cookies, generic auth errors, idle behavior; **rate limiting on uploads**.
+- Authorization: every data-layer function is `userId`-scoped; ownership-scoped
+  `updateMany` for deletes (IDOR-blocked, proven by tests); middleware +
+  server-side `requireUser()`.
+- Validation: Zod on every server action + route; **magic-byte file validation**
+  with allowlist + size cap + content/extension-mismatch rejection.
+- Secrets/config: `.env` git-ignored, `.env.example` provided, Zod env validation
+  at startup (skipped only during build).
+- Headers: **CSP**, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
+  `X-Frame-Options`, COOP, Permissions-Policy (next.config).
+- Audit: `AuditLog` for CREATE/UPDATE/DELETE/EXPORT/LOGIN/CONSENT_CHANGE.
+- Supply chain: `npm audit --audit-level=high` gates CI.
+- Storage: documents stored outside the web root; DB holds metadata only;
+  download is auth + ownership gated.
+- Service worker never caches `/api/*` or PHI.
+
+**Tracked follow-ups (documented, not yet implemented)**
+- **Nonce-based CSP** — script-src currently allows `'unsafe-inline'` for Next's
+  bootstrap; upgrade to per-request nonces via middleware (§6).
+- MFA/WebAuthn step-up; breached-password check; malware scan of uploads;
+  centralized (Redis) rate limiting; pre-launch penetration test.

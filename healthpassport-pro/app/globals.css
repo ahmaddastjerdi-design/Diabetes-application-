@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Respect the user's reduced-motion preference everywhere (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* HealthPassport Pro design tokens — calm, clinical, high-contrast.
    Values are HSL channels consumed as hsl(var(--token)). */
 @layer base {
