@@ -20,12 +20,18 @@ test('a severe-low glucose reading triggers an emergency escalation', async ({ p
 
   await page.goto('/track/vitals');
   await page.locator('#v-type').selectOption('GLUCOSE');
+  // The value field only renders once the type is glucose; wait for it.
+  await expect(page.locator('#v-value')).toBeVisible();
   await page.locator('#v-value').fill('45'); // < 54 mg/dL → severe hypoglycemia
   await page.getByRole('button', { name: /add reading/i }).click();
 
-  // Next.js injects an empty <div role="alert" id="__next-route-announcer__">,
-  // so scope to the SafetyAlert by its content to avoid matching the announcer.
-  const alert = page.getByRole('alert').filter({ hasText: /emergency care/i });
-  await expect(alert).toBeVisible();
-  await expect(alert).toContainText(/very low/i);
+  // Confirm the mutation ran (server action + re-render can be slow on a cold
+  // CI runner) before asserting on the escalation.
+  await expect(page.getByText(/45 mg\/dL/i)).toBeVisible({ timeout: 15000 });
+
+  // Scope to the SafetyAlert (not Next's empty route-announcer alert) by its
+  // finding text. Severe hypoglycemia is an EMERGENCY escalation.
+  const alert = page.getByRole('alert').filter({ hasText: /very low/i });
+  await expect(alert).toBeVisible({ timeout: 10000 });
+  await expect(alert).toContainText(/emergency care/i);
 });
