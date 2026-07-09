@@ -1,0 +1,30 @@
+.hp-report__section { margin-top: var(--hp-space-4); }
+.hp-report__section h3 {
+  font-size: var(--hp-fs-md);
+  color: var(--hp-text-muted);
+  border-bottom: 1px solid var(--hp-border);
+  padding-bottom: var(--hp-space-1);
+  margin-bottom: var(--hp-space-2);
+}
+.hp-report__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--hp-space-3);
+  padding: 2px 0;
+}
+.hp-report__key { color: var(--hp-text-muted); }
+.hp-report__val { font-weight: 600; text-align: end; }
+.hp-report ul { margin: 0; padding-inline-start: 18px; }
+
+/* Print: show only the report, drop app chrome and controls. */
+@media print {
+  :root { --hp-bg: #fff; --hp-surface: #fff; }
+  .hp-appbar,
+  .hp-bottomnav,
+  .hp-disclaimer-strip,
+  .hp-no-print {
+    display: none !important;
+  }
+  .hp-main { padding: 0 !important; max-width: 100% !important; }
+  .hp-card { box-shadow: none; border-color: #ccc; }
+}
