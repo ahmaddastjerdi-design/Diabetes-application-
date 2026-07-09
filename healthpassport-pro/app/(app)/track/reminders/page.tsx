@@ -169,7 +169,9 @@ export default async function RemindersPage() {
                             {TYPE_LABEL[r.type]} · {r.schedule}
                           </div>
                           {r.notes && (
-                            <div className="mt-0.5 text-xs text-muted-foreground">{r.notes}</div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              {r.notes.replace(/\[auto:[\w-]+\]\s*/, '')}
+                            </div>
                           )}
                         </div>
                         <ReminderControls id={r.id} active={r.active} />

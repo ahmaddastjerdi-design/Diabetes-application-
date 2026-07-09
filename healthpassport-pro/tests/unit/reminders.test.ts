@@ -76,7 +76,7 @@ describe('suggestPreventive', () => {
 
   it('suggests nothing without relevant conditions', () => {
     expect(
-      suggestPreventive({ modules: [], labDates: {}, bpFlagged: false, today }),
+      suggestPreventive({ modules: [], labDates: {}, bpFlag: null, today }),
     ).toEqual([]);
   });
 
@@ -84,7 +84,7 @@ describe('suggestPreventive', () => {
     const r = suggestPreventive({
       modules: ['diabetes'],
       labDates: {},
-      bpFlagged: false,
+      bpFlag: null,
       today,
     });
     expect(keys(r)).toEqual(['eye-exam', 'hba1c', 'kidney', 'lipid']);
@@ -97,7 +97,7 @@ describe('suggestPreventive', () => {
     const r = suggestPreventive({
       modules: ['diabetes'],
       labDates: { HBA1C: recent, EGFR: recent, LDL: recent },
-      bpFlagged: false,
+      bpFlag: null,
       today,
     });
     const k = keys(r);
@@ -111,7 +111,7 @@ describe('suggestPreventive', () => {
     const flagged = suggestPreventive({
       modules: ['hypertension'],
       labDates: {},
-      bpFlagged: true,
+      bpFlag: 'high',
       today,
     });
     expect(keys(flagged)).toContain('bp-recheck');
@@ -119,7 +119,7 @@ describe('suggestPreventive', () => {
     const ok = suggestPreventive({
       modules: ['hypertension'],
       labDates: {},
-      bpFlagged: false,
+      bpFlag: null,
       today,
     });
     expect(keys(ok)).not.toContain('bp-recheck');
@@ -129,9 +129,22 @@ describe('suggestPreventive', () => {
     const r = suggestPreventive({
       modules: ['diabetes', 'ckd', 'dyslipidemia'],
       labDates: {},
-      bpFlagged: false,
+      bpFlag: null,
       today,
     });
     expect(new Set(keys(r)).size).toBe(r.length);
+  });
+
+  it('phrases a low-BP recheck without telling the patient to watch for “high”', () => {
+    const r = suggestPreventive({
+      modules: ['hypertension'],
+      labDates: {},
+      bpFlag: 'low',
+      today,
+    });
+    const bp = r.find((s) => s.key === 'bp-recheck');
+    expect(bp).toBeTruthy();
+    expect(bp!.detail.toLowerCase()).toContain('low');
+    expect(bp!.detail.toLowerCase()).not.toContain('stays high');
   });
 });
