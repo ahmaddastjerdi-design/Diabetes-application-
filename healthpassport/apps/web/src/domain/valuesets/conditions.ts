@@ -74,13 +74,38 @@ export const CONDITION_CATALOG: ConditionCatalogEntry[] = [
   ),
 ];
 
-/** Which care modules a set of conditions activates. */
+export type CareModule = 'diabetes' | 'hypertension';
+
+/** Which care modules a set of catalog keys activates. */
 export function careModulesForConditions(
   conditionKeys: readonly string[],
-): Array<'diabetes' | 'hypertension'> {
-  const modules = new Set<'diabetes' | 'hypertension'>();
+): CareModule[] {
+  const modules = new Set<CareModule>();
   for (const c of CONDITION_CATALOG) {
     if (c.careModule && conditionKeys.includes(c.key)) modules.add(c.careModule);
+  }
+  return [...modules];
+}
+
+// Map every terminology code (SNOMED + ICD-10) to its care module.
+const CODE_TO_MODULE = new Map<string, CareModule>();
+for (const entry of CONDITION_CATALOG) {
+  if (!entry.careModule) continue;
+  for (const coding of entry.concept.coding) {
+    CODE_TO_MODULE.set(coding.code, entry.careModule);
+  }
+}
+
+/** Active care modules inferred from stored Condition resources (by code). */
+export function activeCareModules(
+  conditions: ReadonlyArray<{ code: { coding: ReadonlyArray<{ code: string }> } }>,
+): CareModule[] {
+  const modules = new Set<CareModule>();
+  for (const condition of conditions) {
+    for (const coding of condition.code.coding) {
+      const mod = CODE_TO_MODULE.get(coding.code);
+      if (mod) modules.add(mod);
+    }
   }
   return [...modules];
 }

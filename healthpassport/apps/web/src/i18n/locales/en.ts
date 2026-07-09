@@ -130,6 +130,26 @@ export const en = {
     edit: 'Edit details',
     empty: 'Add your details to personalize reports.',
   },
+  care: {
+    title: 'Chronic care',
+    diabetes: 'Diabetes',
+    hypertension: 'Blood pressure',
+    latest: 'Latest',
+    average: 'Average',
+    estimatedA1c: 'Estimated HbA1c',
+    estimatedA1cNote:
+      'Estimated from your recent glucose average — a simplified indicator, not a lab result.',
+    target: 'Target',
+    trendUp: 'Trending up',
+    trendDown: 'Trending down',
+    trendFlat: 'Steady',
+    noData: 'No readings yet. Add one to see your trend.',
+    addReading: 'Add reading',
+    noModules:
+      'Add a chronic condition (like diabetes or high blood pressure) to your record to unlock tailored tracking here.',
+    goToRecord: 'Go to your record',
+    readingsCount: '{count} readings',
+  },
   learn: {
     title: 'Learn',
     intro:
