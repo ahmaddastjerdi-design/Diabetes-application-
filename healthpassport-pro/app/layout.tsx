@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { RegisterSW } from '@/components/pwa/register-sw';
 import './globals.css';
 
 const inter = Inter({
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
     'A personal health record and educational chronic-care guide. Track conditions, understand trends, and prepare physician-ready reports.',
   applicationName: 'HealthPassport Pro',
   formatDetection: { telephone: false },
+  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  appleWebApp: { capable: true, title: 'HealthPassport', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
@@ -43,6 +46,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <RegisterSW />
         </ThemeProvider>
       </body>
     </html>

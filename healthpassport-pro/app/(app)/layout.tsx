@@ -4,16 +4,28 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { UserMenu } from '@/components/layout/user-menu';
 import { MedicalDisclaimer } from '@/components/safety/medical-disclaimer';
+import { OfflineSummarySync } from '@/components/pwa/offline-summary-sync';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/db/prisma';
 
 // NOTE: this shell is public in Phase 1. Route protection (redirect to /login
 // for unauthenticated users) is added in Phase 2 with NextAuth middleware.
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  const settings = session?.user?.id
+    ? await prisma.userSettings.findUnique({
+        where: { userId: session.user.id },
+        select: { offlineSummaryConsent: true },
+      })
+    : null;
+
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
+      <OfflineSummarySync consented={settings?.offlineSummaryConsent ?? false} />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-card focus:px-4 focus:py-2 focus:shadow"
