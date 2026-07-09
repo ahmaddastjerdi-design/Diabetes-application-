@@ -22,7 +22,7 @@ export default function AppLayout({
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r bg-card lg:flex lg:flex-col">
+      <aside className="hidden w-64 shrink-0 border-r bg-card lg:flex lg:flex-col print:!hidden">
         <div className="flex h-16 items-center border-b px-4">
           <Brand href="/dashboard" />
         </div>
@@ -33,7 +33,7 @@ export default function AppLayout({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur print:hidden">
           <div className="lg:hidden">
             <Brand href="/dashboard" />
           </div>
@@ -50,14 +50,16 @@ export default function AppLayout({
           {children}
         </main>
 
-        <footer className="hidden border-t px-4 py-4 lg:block">
+        <footer className="hidden border-t px-4 py-4 lg:block print:hidden">
           <div className="mx-auto max-w-4xl">
             <MedicalDisclaimer variant="compact" />
           </div>
         </footer>
       </div>
 
-      <BottomNav />
+      <div className="print:hidden">
+        <BottomNav />
+      </div>
     </div>
   );
 }
