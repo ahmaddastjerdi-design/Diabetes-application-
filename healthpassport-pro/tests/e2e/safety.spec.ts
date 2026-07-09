@@ -15,25 +15,23 @@ async function registerAndOnboard(page: import('@playwright/test').Page) {
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
-test('a severe-low glucose reading triggers an emergency escalation', async ({ page }) => {
+test('a red-flag reading + symptom triggers an emergency escalation', async ({ page }) => {
   await registerAndOnboard(page);
 
   await page.goto('/track/vitals');
-  await page.locator('#v-type').selectOption('GLUCOSE');
-  // The value field + unit select render once the type is glucose. Set the unit
-  // explicitly: it's populated on a later render tick, so relying on the default
-  // races with submit.
-  await expect(page.locator('#v-value')).toBeVisible();
-  await page.getByLabel('Unit').selectOption('mg/dL');
-  await page.locator('#v-value').fill('45'); // < 54 mg/dL → severe hypoglycemia
+  // Blood pressure is the default measurement (systolic/diastolic fields shown).
+  await page.locator('#v-sys').fill('185'); // ≥180 → hypertensive-crisis (URGENT)
+  await page.locator('#v-dia').fill('125'); // ≥120
+  // Co-reporting a red-flag symptom escalates the reading to EMERGENCY.
+  await page.getByRole('checkbox', { name: /chest pain/i }).check();
   await page.getByRole('button', { name: /add reading/i }).click();
 
-  // Let the server action + revalidation settle on a cold CI runner.
+  // Let the server action settle on a cold CI runner.
   await page.waitForLoadState('networkidle').catch(() => {});
 
   // Scope to the SafetyAlert (not Next's empty route-announcer alert) by its
-  // finding text ("very low" is unit-independent). This is an EMERGENCY.
-  const alert = page.getByRole('alert').filter({ hasText: /very low/i });
+  // content. The EMERGENCY heading is "This may need emergency care".
+  const alert = page.getByRole('alert').filter({ hasText: /emergency care/i });
   await expect(alert).toBeVisible({ timeout: 15000 });
-  await expect(alert).toContainText(/emergency care/i);
+  await expect(alert).toContainText(/very high/i); // the blood-pressure finding
 });
