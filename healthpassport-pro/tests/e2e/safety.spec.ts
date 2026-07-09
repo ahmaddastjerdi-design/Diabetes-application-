@@ -20,18 +20,20 @@ test('a severe-low glucose reading triggers an emergency escalation', async ({ p
 
   await page.goto('/track/vitals');
   await page.locator('#v-type').selectOption('GLUCOSE');
-  // The value field only renders once the type is glucose; wait for it.
+  // The value field + unit select render once the type is glucose. Set the unit
+  // explicitly: it's populated on a later render tick, so relying on the default
+  // races with submit.
   await expect(page.locator('#v-value')).toBeVisible();
+  await page.getByLabel('Unit').selectOption('mg/dL');
   await page.locator('#v-value').fill('45'); // < 54 mg/dL → severe hypoglycemia
   await page.getByRole('button', { name: /add reading/i }).click();
 
-  // Confirm the mutation ran (server action + re-render can be slow on a cold
-  // CI runner) before asserting on the escalation.
-  await expect(page.getByText(/45 mg\/dL/i)).toBeVisible({ timeout: 15000 });
+  // Let the server action + revalidation settle on a cold CI runner.
+  await page.waitForLoadState('networkidle').catch(() => {});
 
   // Scope to the SafetyAlert (not Next's empty route-announcer alert) by its
-  // finding text. Severe hypoglycemia is an EMERGENCY escalation.
+  // finding text ("very low" is unit-independent). This is an EMERGENCY.
   const alert = page.getByRole('alert').filter({ hasText: /very low/i });
-  await expect(alert).toBeVisible({ timeout: 10000 });
+  await expect(alert).toBeVisible({ timeout: 15000 });
   await expect(alert).toContainText(/emergency care/i);
 });

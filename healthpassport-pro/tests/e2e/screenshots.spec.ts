@@ -16,10 +16,13 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: `${DIR}/${name}.png`, fullPage: true });
 }
 
-async function addVital(page: Page, fill: () => Promise<void>) {
+// Add a reading and WAIT for it to be committed before returning. The form
+// resets its fields after each submit, so entering the next reading before the
+// previous transition finishes would race and drop values.
+async function addVital(page: Page, fill: () => Promise<void>, expectText: string) {
   await fill();
   await page.getByRole('button', { name: /add reading/i }).click();
-  await page.waitForTimeout(500);
+  await expect(page.getByText(expectText).first()).toBeVisible({ timeout: 15000 });
 }
 
 test('capture authenticated app screenshots', async ({ page }) => {
@@ -66,24 +69,36 @@ test('capture authenticated app screenshots', async ({ page }) => {
 
   // --- Vitals: a trend plus a red-flag reading ---
   await page.goto('/track/vitals');
-  await addVital(page, async () => {
-    await page.locator('#v-type').selectOption('BLOOD_PRESSURE');
-    await page.locator('#v-sys').fill('138');
-    await page.locator('#v-dia').fill('86');
-  });
-  await addVital(page, async () => {
-    await page.locator('#v-sys').fill('150');
-    await page.locator('#v-dia').fill('92');
-  });
+  await addVital(
+    page,
+    async () => {
+      await page.locator('#v-type').selectOption('BLOOD_PRESSURE');
+      await page.locator('#v-sys').fill('138');
+      await page.locator('#v-dia').fill('86');
+    },
+    '138/86 mmHg',
+  );
+  await addVital(
+    page,
+    async () => {
+      await page.locator('#v-sys').fill('150');
+      await page.locator('#v-dia').fill('92');
+    },
+    '150/92 mmHg',
+  );
   // Final reading trips the hypertensive-crisis red flag → alert on screen.
-  await addVital(page, async () => {
-    await page.locator('#v-sys').fill('185');
-    await page.locator('#v-dia').fill('125');
-  });
+  await addVital(
+    page,
+    async () => {
+      await page.locator('#v-sys').fill('185');
+      await page.locator('#v-dia').fill('125');
+    },
+    '185/125 mmHg',
+  );
   // Scope past Next's empty route-announcer alert to the real SafetyAlert.
   await expect(
     page.getByRole('alert').filter({ hasText: /care team|emergency/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10000 });
   await shot(page, '03-vitals-safety-alert');
 
   // --- Labs ---
