@@ -42,6 +42,8 @@ export const en = {
     acknowledge: 'I understand',
     referenceNote:
       'Ranges are general guidance, not a diagnosis. Discuss any concerns with your care team.',
+    callEmergency: 'If you feel unwell, call your local emergency number now.',
+    saved: 'Your reading was saved.',
   },
   onboarding: {
     welcomeTitle: 'Welcome to HealthPassport Pro',
@@ -127,6 +129,13 @@ export const en = {
     unknown: 'Prefer not to say',
     edit: 'Edit details',
     empty: 'Add your details to personalize reports.',
+  },
+  learn: {
+    title: 'Learn',
+    intro:
+      'General, reviewed health education. This is not personal medical advice — always follow your own care team.',
+    source: 'Source',
+    reviewed: 'Reviewed',
   },
   forms: {
     measurement: 'Measurement',

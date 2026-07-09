@@ -11,6 +11,9 @@ import {
 } from '../../domain/valuesets/observations';
 import { makeBloodPressure, makeObservation } from '../../domain/factories';
 import { validateResource } from '../../domain/validation';
+import { evaluateObservation } from '../../safety/engine';
+import { SafetyAlert } from '../../safety/SafetyAlert';
+import type { SafetyEvaluation } from '../../safety/types';
 import type { Observation } from '../../domain/resources';
 
 /** Format a Date as a value for <input type="datetime-local"> (local time). */
@@ -47,6 +50,9 @@ export function AddReadingModal({
   const [when, setWhen] = useState(() => toLocalInputValue(new Date()));
   const [note, setNote] = useState('');
   const [error, setError] = useState<string>();
+  // After saving, if the reading triggers a red flag we hold the modal open on
+  // an acknowledgment step showing the escalation instead of closing silently.
+  const [escalation, setEscalation] = useState<SafetyEvaluation | null>(null);
 
   function onSelectMeasurement(nextKey: ObservationKey) {
     setKey(nextKey);
@@ -81,8 +87,29 @@ export function AddReadingModal({
       setError(result.issues[0]?.message ?? 'Please check your entry.');
       return;
     }
+    // Persist first (never lose the patient's data), then evaluate for red flags.
     await onSaved(obs);
+    const evaluation = evaluateObservation(obs);
+    if (evaluation.disposition !== 'ROUTINE') {
+      setEscalation(evaluation);
+      return;
+    }
     onClose();
+  }
+
+  if (escalation) {
+    return (
+      <Modal title={t('safety.emergencyTitle')} onClose={onClose}>
+        <div className="hp-stack">
+          <p className="hp-card__subtitle">{t('safety.saved')}</p>
+          <SafetyAlert evaluation={escalation} />
+          <p className="hp-field__hint">{t('safety.referenceNote')}</p>
+          <div className="hp-form-actions">
+            <Button onClick={onClose}>{t('safety.acknowledge')}</Button>
+          </div>
+        </div>
+      </Modal>
+    );
   }
 
   return (
