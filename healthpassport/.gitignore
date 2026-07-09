@@ -12,6 +12,9 @@ apps/web/dev-dist/
 apps/web/public/sw.js
 apps/web/public/workbox-*.js
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Test / coverage
 coverage/
 .vitest/

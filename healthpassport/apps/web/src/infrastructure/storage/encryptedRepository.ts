@@ -61,11 +61,13 @@ export class EncryptedIndexedDbRepository implements HealthRecordRepository {
     await this.audit?.record('remove', type, id);
   }
 
-  async exportAll(): Promise<HealthResource[]> {
+  async loadAll(): Promise<HealthResource[]> {
     const stored = await this.db.getAll('records');
-    const resources = await Promise.all(
-      stored.map((s) => this.decode<HealthResource>(s)),
-    );
+    return Promise.all(stored.map((s) => this.decode<HealthResource>(s)));
+  }
+
+  async exportAll(): Promise<HealthResource[]> {
+    const resources = await this.loadAll();
     await this.audit?.record('export');
     return resources;
   }

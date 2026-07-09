@@ -14,6 +14,14 @@ export interface LocalHealthStore {
   vault: Vault;
   repository: HealthRecordRepository;
   audit: AuditLog;
+  /**
+   * Irreversibly erase everything — records, audit trail, and the vault's key
+   * material — returning the app to first-run state. Backs the patient's right
+   * to erasure (GDPR Art. 17).
+   */
+  wipe: () => Promise<void>;
+  /** Close the underlying IndexedDB connection (on teardown/unmount). */
+  close: () => void;
 }
 
 export async function createLocalHealthStore(
@@ -27,5 +35,9 @@ export async function createLocalHealthStore(
     () => vault.cipher(),
     audit,
   );
-  return { vault, repository, audit };
+  const wipe = async () => {
+    vault.lock();
+    await Promise.all([db.clear('records'), db.clear('meta'), db.clear('audit')]);
+  };
+  return { vault, repository, audit, wipe, close: () => db.close() };
 }

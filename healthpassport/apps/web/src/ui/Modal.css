@@ -1,0 +1,38 @@
+.hp-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0;
+}
+@media (min-width: 560px) {
+  .hp-modal__backdrop { align-items: center; padding: var(--hp-space-4); }
+}
+
+.hp-modal {
+  width: 100%;
+  max-width: var(--hp-content-max);
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-border);
+  border-radius: var(--hp-radius-lg) var(--hp-radius-lg) 0 0;
+  padding: var(--hp-space-5);
+  padding-bottom: max(var(--hp-space-5), env(safe-area-inset-bottom));
+  box-shadow: var(--hp-shadow-2);
+}
+@media (min-width: 560px) {
+  .hp-modal { border-radius: var(--hp-radius-lg); }
+}
+
+.hp-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hp-space-3);
+  margin-bottom: var(--hp-space-4);
+}
+.hp-modal__title { font-size: var(--hp-fs-xl); }

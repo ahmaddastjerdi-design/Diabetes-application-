@@ -18,7 +18,9 @@ export interface HealthRecordRepository {
   list<T extends ResourceType>(type: T): Promise<ResourceOf<T>[]>;
   /** Remove a resource. */
   remove(type: ResourceType, id: string): Promise<void>;
-  /** Every resource in the record (for export / report generation). */
+  /** Bulk read for loading the record into memory (not audited). */
+  loadAll(): Promise<HealthResource[]>;
+  /** Every resource, recorded as a patient-initiated export (audited). */
   exportAll(): Promise<HealthResource[]>;
   /** Irreversibly delete all records (patient right to erasure). */
   clear(): Promise<void>;

@@ -1,39 +1,67 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { I18nProvider } from '../i18n/I18nProvider';
 import { ThemeProvider } from '../ui/theme';
+import { SessionProvider } from '../state/SessionProvider';
 
-function renderApp(initialPath = '/') {
+function resetDb() {
+  return new Promise<void>((resolve) => {
+    const req = indexedDB.deleteDatabase('healthpassport');
+    req.onsuccess = req.onerror = req.onblocked = () => resolve();
+  });
+}
+
+beforeEach(async () => {
+  await resetDb();
+  localStorage.clear();
+});
+
+function renderApp() {
   return render(
     <ThemeProvider>
       <I18nProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <App />
-        </MemoryRouter>
+        <SessionProvider>
+          <MemoryRouter initialEntries={['/']}>
+            <App />
+          </MemoryRouter>
+        </SessionProvider>
       </I18nProvider>
     </ThemeProvider>,
   );
 }
 
-describe('App shell', () => {
-  it('renders the brand and primary navigation', () => {
-    renderApp('/');
-    // Brand appears in the app bar.
+describe('App gate', () => {
+  it('shows onboarding for a first-run (uninitialized) record', async () => {
+    renderApp();
     expect(
-      screen.getAllByText('HealthPassport Pro').length,
-    ).toBeGreaterThan(0);
-    // All five primary sections are reachable.
-    expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /record/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /care/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /learn/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /report/i })).toBeInTheDocument();
+      await screen.findByText('Welcome to HealthPassport Pro'),
+    ).toBeInTheDocument();
   });
 
-  it('always shows the educational disclaimer', () => {
-    renderApp('/');
+  it('completes onboarding and reveals the unlocked app', async () => {
+    renderApp();
+    await screen.findByText('Welcome to HealthPassport Pro');
+
+    // Acknowledge and continue.
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /get started/i }));
+
+    // Set a strong passphrase.
+    const pass = 'Correct-Horse-9';
+    fireEvent.change(await screen.findByLabelText('Passphrase'), {
+      target: { value: pass },
+    });
+    fireEvent.change(screen.getByLabelText('Confirm passphrase'), {
+      target: { value: pass },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create secure record/i }));
+
+    // The unlocked app shows the primary navigation and the disclaimer.
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /record/i })).toBeInTheDocument(),
+    );
     expect(screen.getByText(/not medical advice/i)).toBeInTheDocument();
   });
 });
