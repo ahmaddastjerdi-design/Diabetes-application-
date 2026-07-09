@@ -28,6 +28,8 @@ export const vitalSchema = z
     value2: z.coerce.number().finite().optional().or(z.nan().transform(() => undefined)),
     unit: z.string().min(1),
     recordedAt: dateTime,
+    // Red-flag symptoms co-reported with this reading (drives escalation).
+    symptomCodes: z.array(z.string()).default([]),
     notes: optNote,
   })
   .superRefine((v, ctx) => {

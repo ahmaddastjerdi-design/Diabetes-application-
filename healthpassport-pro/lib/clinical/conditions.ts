@@ -30,3 +30,22 @@ export const CONDITION_CATALOG: ConditionCatalogEntry[] = [
 export function findCondition(key: string): ConditionCatalogEntry | undefined {
   return CONDITION_CATALOG.find((c) => c.key === key);
 }
+
+export type CareModule = NonNullable<ConditionCatalogEntry['careModule']>;
+
+const SNOMED_TO_MODULE = new Map<string, CareModule>();
+for (const c of CONDITION_CATALOG) {
+  if (c.careModule) SNOMED_TO_MODULE.set(c.snomed, c.careModule);
+}
+
+/** Active care modules inferred from stored conditions (matched by SNOMED code). */
+export function careModulesFromConditions(
+  conditions: ReadonlyArray<{ code: string }>,
+): CareModule[] {
+  const modules = new Set<CareModule>();
+  for (const c of conditions) {
+    const m = SNOMED_TO_MODULE.get(c.code);
+    if (m) modules.add(m);
+  }
+  return [...modules];
+}

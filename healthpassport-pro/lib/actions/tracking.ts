@@ -25,6 +25,7 @@ import {
   evaluateLab,
   evaluateSymptoms,
   evaluateVital,
+  mergeEvaluations,
   type Disposition,
   type Finding,
 } from '@/lib/medical-rules';
@@ -51,7 +52,12 @@ export async function addVitalAction(input: VitalInput): Promise<TrackResult> {
   const created = await createVital(user.id, v);
   await recordAudit({ userId: user.id, action: 'CREATE', entityType: 'VitalObservation', entityId: created.id });
   revalidatePath('/track/vitals');
-  const evaluation = evaluateVital(v.type, v.value, v.unit, v.value2);
+  // Escalation merges the reading with any co-reported red-flag symptoms, so a
+  // borderline value WITH a red-flag symptom reaches EMERGENCY (safety review).
+  const evaluation = mergeEvaluations(
+    evaluateVital(v.type, v.value, v.unit, v.value2),
+    evaluateSymptoms(v.symptomCodes),
+  );
   return { ok: true, evaluation };
 }
 

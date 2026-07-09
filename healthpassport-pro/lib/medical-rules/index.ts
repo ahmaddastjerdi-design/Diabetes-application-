@@ -4,9 +4,11 @@ import {
   classifyEgfr,
   classifyGlucose,
   classifyHeartRate,
+  classifyLdl,
   classifyPotassium,
   classifySpo2,
   classifyTemperature,
+  classifyTriglycerides,
   evaluationOf,
   type Evaluation,
 } from './rules';
@@ -46,6 +48,10 @@ export function evaluateLab(type: LabType, value: number): Evaluation {
       return evaluationOf(classifyPotassium(value));
     case 'EGFR':
       return evaluationOf(classifyEgfr(value));
+    case 'LDL':
+      return evaluationOf(classifyLdl(value));
+    case 'TRIGLYCERIDES':
+      return evaluationOf(classifyTriglycerides(value));
     default:
       return evaluationOf([]);
   }

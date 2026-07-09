@@ -1,6 +1,12 @@
 import { AlertTriangle, Siren } from 'lucide-react';
 import type { Disposition, Finding } from '@/lib/medical-rules';
+import { GLOBAL_DISCLAIMER } from '@/lib/medical-rules/disclaimer';
 import { cn } from '@/lib/utils/cn';
+
+// The emergency-guidance sentence is the tail of the canonical global disclaimer.
+const EMERGENCY_GUIDANCE = GLOBAL_DISCLAIMER.slice(
+  GLOBAL_DISCLAIMER.indexOf('For urgent symptoms'),
+);
 
 /**
  * Renders a clinical-safety escalation. EMERGENCY is loudest and suppresses
@@ -40,13 +46,7 @@ export function SafetyAlert({
             <li key={f.code}>{f.detail}</li>
           ))}
         </ul>
-        {emergency && (
-          <p className="font-semibold">
-            For urgent symptoms such as chest pain, severe shortness of breath,
-            fainting, stroke-like symptoms, or severe weakness, seek emergency
-            medical care.
-          </p>
-        )}
+        {emergency && <p className="font-semibold">{EMERGENCY_GUIDANCE}</p>}
         <p className="text-xs opacity-80">
           Ranges are guidance, not a diagnosis. Discuss any concerns with your
           care team.

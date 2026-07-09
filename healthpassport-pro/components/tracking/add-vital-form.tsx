@@ -8,6 +8,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { vitalSchema, VITAL_TYPES, type VitalInput } from '@/lib/validation/tracking';
 import { addVitalAction, type TrackResult } from '@/lib/actions/tracking';
 import { VITAL_META } from '@/lib/clinical/measurements';
+import { RED_FLAG_SYMPTOMS } from '@/lib/medical-rules';
 import { Field } from '@/components/forms/field';
 import { FormError } from '@/components/forms/form-error';
 import { SafetyAlert } from '@/components/safety/safety-alert';
@@ -115,6 +116,20 @@ export function AddVitalForm() {
           <Input id="v-notes" {...register('notes')} />
         </Field>
       </div>
+
+      <fieldset className="space-y-2 rounded-md border p-3">
+        <legend className="px-1 text-sm font-medium text-muted-foreground">
+          Do you have any of these right now?
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {RED_FLAG_SYMPTOMS.map((s) => (
+            <label key={s.code} className="flex items-start gap-2 text-sm">
+              <input type="checkbox" value={s.code} className="mt-0.5 size-4" {...register('symptomCodes')} />
+              {s.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending} aria-busy={pending}>
