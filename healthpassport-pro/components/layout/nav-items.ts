@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bell,
   BookOpen,
   CalendarClock,
   ClipboardList,
@@ -51,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/track/labs', label: 'Labs', icon: FlaskConical },
       { href: '/track/symptoms', label: 'Symptoms', icon: HeartPulse },
       { href: '/track/daily-checkin', label: 'Daily check-in', icon: CalendarClock },
+      { href: '/track/reminders', label: 'Reminders', icon: Bell },
     ],
   },
   {

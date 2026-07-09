@@ -20,6 +20,7 @@ import { requireUser } from '@/lib/auth/session';
 import { isOnboarded } from '@/lib/data/profile';
 import { listVitals, listLabs, listCheckIns } from '@/lib/data/tracking';
 import { listConditions, listMedications } from '@/lib/data/records';
+import { getAdherence } from '@/lib/data/reminders';
 import { VITAL_META, LAB_META } from '@/lib/clinical/measurements';
 import {
   VITAL_REFERENCE,
@@ -54,13 +55,15 @@ export default async function DashboardPage() {
   // First-run patients complete onboarding before seeing the dashboard.
   if (!(await isOnboarded(user.id))) redirect('/onboarding');
 
-  const [vitals, labs, conditions, medications, checkIns] = await Promise.all([
-    listVitals(user.id),
-    listLabs(user.id),
-    listConditions(user.id),
-    listMedications(user.id),
-    listCheckIns(user.id, 7),
-  ]);
+  const [vitals, labs, conditions, medications, checkIns, adherence] =
+    await Promise.all([
+      listVitals(user.id),
+      listLabs(user.id),
+      listConditions(user.id),
+      listMedications(user.id),
+      listCheckIns(user.id, 7),
+      getAdherence(user.id),
+    ]);
 
   // Latest reading per vital type → metric cards.
   const metricCards = latestVitalViews(vitals as VitalLike[]);
@@ -283,6 +286,23 @@ export default async function DashboardPage() {
             <CardTitle>Reminders &amp; activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {adherence.loggedDays > 0 && (
+              <Link
+                href="/track/reminders"
+                className="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm hover:border-primary"
+              >
+                <span className="flex items-center gap-2">
+                  <Pill aria-hidden className="size-4 text-muted-foreground" />
+                  Medication adherence
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="font-semibold tabular-nums">{adherence.rate}%</span>
+                  <StatusBadge status={adherence.rate >= 80 ? 'ok' : adherence.rate >= 50 ? 'caution' : 'alert'}>
+                    {adherence.streak}-day streak
+                  </StatusBadge>
+                </span>
+              </Link>
+            )}
             <div>
               <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <ClipboardList aria-hidden className="size-3.5" /> Reminders
