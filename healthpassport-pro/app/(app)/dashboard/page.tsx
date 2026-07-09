@@ -4,6 +4,7 @@ import { Activity, ClipboardList, FileText, FlaskConical } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { MedicalDisclaimer } from '@/components/safety/medical-disclaimer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { requireUser } from '@/lib/auth/session';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -14,11 +15,13 @@ const QUICK_LINKS = [
   { href: '/reports', label: 'Doctor report', icon: FileText },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Server-side auth boundary (defense in depth alongside middleware).
+  const user = await requireUser();
   return (
     <>
       <PageHeader
-        title="Welcome back"
+        title={`Welcome back${user.name ? `, ${user.name}` : ''}`}
         description="Here's your health at a glance."
       />
 

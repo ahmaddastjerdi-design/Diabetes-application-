@@ -2,6 +2,7 @@ import { Brand } from '@/components/layout/brand';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
+import { UserMenu } from '@/components/layout/user-menu';
 import { MedicalDisclaimer } from '@/components/safety/medical-disclaimer';
 
 // NOTE: this shell is public in Phase 1. Route protection (redirect to /login
@@ -36,8 +37,9 @@ export default function AppLayout({
           <div className="lg:hidden">
             <Brand href="/dashboard" />
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
+            <UserMenu />
           </div>
         </header>
 
