@@ -12,6 +12,9 @@ next-env.d.ts
 # Prisma (generated client is committed via node_modules; keep local artifacts out)
 # (migrations ARE committed; see prisma/migrations)
 
+# Local document storage (never commit uploaded files)
+/.uploads
+
 # Env / secrets — never commit real values
 .env
 .env*.local

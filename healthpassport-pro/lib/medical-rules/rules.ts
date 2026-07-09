@@ -62,7 +62,7 @@ export function classifyBloodPressure(systolic: number, diastolic: number): Find
   if (systolic >= 180 || diastolic >= 120)
     return [{ disposition: 'URGENT', code: 'hypertensive-crisis-range', detail: `Blood pressure ${systolic}/${diastolic} mmHg is very high. Rest and recheck; if it stays this high or you feel unwell, seek care now.`, citation: 'ACC/AHA 2017 — hypertensive crisis (≥180 and/or ≥120 mmHg)' }];
   if (systolic < 90)
-    return [{ disposition: 'URGENT', code: 'hypotension', detail: `Systolic pressure ${systolic} mmHg is low. If you feel dizzy or unwell, contact your care team.`, citation: 'App safety choice (possible symptomatic hypotension); confirm with clinician' }];
+    return [{ disposition: 'URGENT', code: 'hypotension', detail: `Systolic pressure ${systolic} mmHg is low. If you feel dizzy or unwell, contact your care team.`, citation: 'App safety anchor (possible symptomatic hypotension), pending CSO citation' }];
   return [];
 }
 
@@ -70,7 +70,7 @@ export function classifySpo2(value: number): Finding[] {
   if (value < 90)
     return [{ disposition: 'EMERGENCY', code: 'severe-hypoxemia', detail: `Oxygen saturation ${value}% is very low.`, citation: 'WHO — hypoxemia (<90%)' }];
   if (value < 92)
-    return [{ disposition: 'URGENT', code: 'hypoxemia', detail: `Oxygen saturation ${value}% is low. If you are breathless, seek care.`, citation: 'App safety choice (borderline hypoxemia <92%; WHO hypoxemia <90%)' }];
+    return [{ disposition: 'URGENT', code: 'hypoxemia', detail: `Oxygen saturation ${value}% is low. If you are breathless, seek care.`, citation: 'RCP NEWS2 — low SpO₂ (scale 1 ≤93%); WHO hypoxemia <90%' }];
   return [];
 }
 
@@ -85,12 +85,12 @@ export function classifyHeartRate(value: number): Finding[] {
 export function classifyTemperature(value: number, unit: string): Finding[] {
   const c = tempToCelsius(value, unit);
   if (c >= 41)
-    return [{ disposition: 'EMERGENCY', code: 'hyperpyrexia', detail: `Temperature ${value} ${unit} is dangerously high.`, citation: 'Hyperpyrexia (≥41 °C)' }];
+    return [{ disposition: 'EMERGENCY', code: 'hyperpyrexia', detail: `Temperature ${value} ${unit} is dangerously high.`, citation: 'App safety anchor (hyperpyrexia ≥41 °C), pending CSO citation' }];
   if (c < 32)
-    return [{ disposition: 'EMERGENCY', code: 'severe-hypothermia', detail: `Temperature ${value} ${unit} is dangerously low (severe hypothermia).`, citation: 'Severe hypothermia (<32 °C)' }];
+    return [{ disposition: 'EMERGENCY', code: 'severe-hypothermia', detail: `Temperature ${value} ${unit} is dangerously low (severe hypothermia).`, citation: 'App safety anchor (severe hypothermia <32 °C), pending CSO citation' }];
   if (c >= 39.1)
     return [{ disposition: 'URGENT', code: 'high-fever', detail: `Temperature ${value} ${unit} is a high fever. If you feel very unwell, contact your care team.`, citation: 'RCP NEWS2 — temperature ≥39.1 °C (score 2)' }];
-  if (c < 35)
+  if (c <= 35)
     return [{ disposition: 'URGENT', code: 'hypothermia', detail: `Temperature ${value} ${unit} is low (hypothermia range).`, citation: 'RCP NEWS2 — temperature ≤35.0 °C (score 3)' }];
   return [];
 }
@@ -100,11 +100,11 @@ export function classifyPotassium(value: number): Finding[] {
   if (value >= 6.5)
     return [{ disposition: 'EMERGENCY', code: 'severe-hyperkalemia', detail: `Potassium ${value} mmol/L is severely high (arrhythmia risk).`, citation: 'Severe hyperkalemia (≥6.5 mmol/L, conservative ERC band)' }];
   if (value >= 5.5)
-    return [{ disposition: 'URGENT', code: 'hyperkalemia', detail: `Potassium ${value} mmol/L is high. Contact your care team.`, citation: 'Hyperkalemia (5.5–6.4 mmol/L)' }];
+    return [{ disposition: 'URGENT', code: 'hyperkalemia', detail: `Potassium ${value} mmol/L is high. Contact your care team.`, citation: 'ERC / standard clinical refs — hyperkalemia (5.5–6.4 mmol/L)' }];
   if (value < 2.5)
-    return [{ disposition: 'EMERGENCY', code: 'severe-hypokalemia', detail: `Potassium ${value} mmol/L is severely low (arrhythmia risk).`, citation: 'Severe hypokalemia (<2.5 mmol/L)' }];
+    return [{ disposition: 'EMERGENCY', code: 'severe-hypokalemia', detail: `Potassium ${value} mmol/L is severely low (arrhythmia risk).`, citation: 'Standard clinical refs — severe hypokalemia (<2.5 mmol/L), pending CSO citation' }];
   if (value < 3.5)
-    return [{ disposition: 'URGENT', code: 'hypokalemia', detail: `Potassium ${value} mmol/L is low. Contact your care team.`, citation: 'Hypokalemia (<3.5 mmol/L)' }];
+    return [{ disposition: 'URGENT', code: 'hypokalemia', detail: `Potassium ${value} mmol/L is low. Contact your care team.`, citation: 'Standard clinical refs — hypokalemia (<3.5 mmol/L)' }];
   return [];
 }
 

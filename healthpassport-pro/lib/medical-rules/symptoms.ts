@@ -15,10 +15,10 @@ export interface RedFlagSymptom {
 export const RED_FLAG_SYMPTOMS: RedFlagSymptom[] = [
   { code: 'chest-pain', label: 'Chest pain or pressure', disposition: 'EMERGENCY', citation: 'AHA — acute coronary syndrome warning signs' },
   { code: 'stroke-fast', label: 'Face drooping, arm weakness, or slurred speech', disposition: 'EMERGENCY', citation: 'AHA/ASA — stroke FAST warning signs' },
-  { code: 'severe-dyspnea', label: 'Severe difficulty breathing', disposition: 'EMERGENCY', citation: 'Emergency dyspnea red flag' },
-  { code: 'syncope', label: 'Fainting or loss of consciousness', disposition: 'EMERGENCY', citation: 'Syncope / loss of consciousness red flag' },
+  { code: 'severe-dyspnea', label: 'Severe difficulty breathing', disposition: 'EMERGENCY', citation: 'App safety anchor (severe dyspnea), pending CSO citation' },
+  { code: 'syncope', label: 'Fainting or loss of consciousness', disposition: 'EMERGENCY', citation: 'App safety anchor (syncope / loss of consciousness), pending CSO citation' },
   { code: 'severe-weakness', label: 'Sudden severe weakness', disposition: 'EMERGENCY', citation: 'AHA/ASA — sudden weakness (possible stroke)' },
-  { code: 'thunderclap-headache', label: 'Sudden, severe headache', disposition: 'EMERGENCY', citation: 'Thunderclap headache red flag' },
+  { code: 'thunderclap-headache', label: 'Sudden, severe headache', disposition: 'EMERGENCY', citation: 'AHA/ASA — sudden severe headache (stroke warning sign)' },
   { code: 'confusion', label: 'Sudden confusion', disposition: 'EMERGENCY', citation: 'AHA/ASA — sudden confusion (possible stroke)' },
   { code: 'dka-pattern', label: 'Nausea, vomiting, and deep rapid breathing with high glucose', disposition: 'EMERGENCY', citation: 'ADA — diabetic ketoacidosis pattern' },
 ];

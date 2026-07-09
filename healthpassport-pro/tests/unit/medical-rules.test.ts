@@ -46,9 +46,33 @@ describe('vital red-flag escalation', () => {
     expect(evaluateVital('TEMPERATURE', 37, '°C').disposition).toBe('ROUTINE');
   });
 
-  it('every non-routine finding carries a citation', () => {
-    const e = evaluateVital('GLUCOSE', 45, 'mg/dL');
-    expect(e.findings.every((f) => f.citation.length > 0)).toBe(true);
+  it('every finding cites a named guideline or an explicit pending-CSO marker', () => {
+    // A safety-relevant gate: a bare numeric restatement must NOT pass
+    // (docs/MEDICAL_SAFETY_RULES.md §6). Require a recognizable source token.
+    const CITE = /ADA|ACC|AHA|ASA|KDIGO|NEWS2|RCP|ERC|WHO|NCEP|Endocrine|clinical refs|app safety anchor|pending CSO/i;
+    const findings = [
+      ...evaluateVital('GLUCOSE', 45, 'mg/dL').findings,
+      ...evaluateVital('GLUCOSE', 420, 'mg/dL').findings,
+      ...evaluateVital('BLOOD_PRESSURE', 185, 'mmHg', 125).findings,
+      ...evaluateVital('BLOOD_PRESSURE', 85, 'mmHg', 55).findings,
+      ...evaluateVital('SPO2', 86, '%').findings,
+      ...evaluateVital('SPO2', 91, '%').findings,
+      ...evaluateVital('HEART_RATE', 135, 'bpm').findings,
+      ...evaluateVital('TEMPERATURE', 30, '°C').findings,
+      ...evaluateVital('TEMPERATURE', 42, '°C').findings,
+      ...evaluateVital('TEMPERATURE', 34, '°C').findings,
+      ...evaluateLab('POTASSIUM', 6.8).findings,
+      ...evaluateLab('POTASSIUM', 2.2).findings,
+      ...evaluateLab('POTASSIUM', 3.2).findings,
+      ...evaluateLab('EGFR', 12).findings,
+      ...evaluateLab('LDL', 200).findings,
+      ...evaluateLab('TRIGLYCERIDES', 600).findings,
+      ...evaluateSymptoms(['chest-pain', 'stroke-fast', 'severe-dyspnea', 'syncope', 'thunderclap-headache', 'dka-pattern', 'confusion']).findings,
+    ];
+    expect(findings.length).toBeGreaterThan(15);
+    for (const f of findings) {
+      expect(f.citation, `${f.code}: "${f.citation}"`).toMatch(CITE);
+    }
   });
 });
 

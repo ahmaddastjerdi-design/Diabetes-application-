@@ -24,6 +24,14 @@ export function shortDate(d: Date): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** Human-readable byte size, e.g. "1.4 MB". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(0)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 const TITLE_CASE: Record<string, string> = {
   ACTIVE: 'Active',
   RESOLVED: 'Resolved',
