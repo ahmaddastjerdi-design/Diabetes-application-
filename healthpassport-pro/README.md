@@ -34,6 +34,15 @@ conditions, medications, and labs. Set `SEED_DEMO=false` in
 [`docker-compose.yml`](docker-compose.yml) for an empty database. Stop with
 `Ctrl-C`; wipe data with `docker compose down -v`.
 
+## Deploy to a public URL
+
+A [`render.yaml`](../render.yaml) Blueprint is included. On
+[render.com](https://render.com) → **New → Blueprint** → pick this repo: Render
+provisions a PostgreSQL database and the web service, builds the Docker image,
+runs migrations, seeds the demo patient, and returns a public `https` URL. Sign
+in with the demo credentials above. (Full staging/production runbook:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).)
+
 ## Run locally without Docker
 
 Requires Node 20 and a PostgreSQL database.
