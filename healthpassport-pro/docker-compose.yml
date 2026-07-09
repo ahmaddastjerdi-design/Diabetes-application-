@@ -1,0 +1,47 @@
+# One-command local run of the complete application:
+#
+#   docker compose up --build
+#
+# Then open http://localhost:3000 and sign in with the seeded demo patient:
+#   email: demo@healthpassport.local   password: Demo!12345
+#
+# The demo patient (synthetic data only) is seeded because SEED_DEMO=true.
+# Set SEED_DEMO=false for an empty database.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: healthpassport
+      POSTGRES_PASSWORD: healthpassport
+      POSTGRES_DB: healthpassport
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U healthpassport -d healthpassport']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - hp_pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://healthpassport:healthpassport@db:5432/healthpassport?schema=public
+      DIRECT_URL: postgresql://healthpassport:healthpassport@db:5432/healthpassport?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      AUTH_URL: http://localhost:3000
+      AUTH_TRUST_HOST: 'true'
+      # Dev-only default; override with your own for anything non-local.
+      AUTH_SECRET: ${AUTH_SECRET:-dev-only-change-me-please-0123456789abcdef}
+      SEED_DEMO: 'true'
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+
+volumes:
+  hp_pgdata:
