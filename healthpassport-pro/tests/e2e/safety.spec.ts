@@ -23,7 +23,9 @@ test('a severe-low glucose reading triggers an emergency escalation', async ({ p
   await page.locator('#v-value').fill('45'); // < 54 mg/dL → severe hypoglycemia
   await page.getByRole('button', { name: /add reading/i }).click();
 
-  const alert = page.getByRole('alert');
-  await expect(alert).toContainText(/emergency care/i);
+  // Next.js injects an empty <div role="alert" id="__next-route-announcer__">,
+  // so scope to the SafetyAlert by its content to avoid matching the announcer.
+  const alert = page.getByRole('alert').filter({ hasText: /emergency care/i });
+  await expect(alert).toBeVisible();
   await expect(alert).toContainText(/very low/i);
 });

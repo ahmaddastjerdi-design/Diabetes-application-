@@ -80,7 +80,10 @@ test('capture authenticated app screenshots', async ({ page }) => {
     await page.locator('#v-sys').fill('185');
     await page.locator('#v-dia').fill('125');
   });
-  await expect(page.getByRole('alert')).toBeVisible();
+  // Scope past Next's empty route-announcer alert to the real SafetyAlert.
+  await expect(
+    page.getByRole('alert').filter({ hasText: /care team|emergency/i }),
+  ).toBeVisible();
   await shot(page, '03-vitals-safety-alert');
 
   // --- Labs ---
