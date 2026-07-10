@@ -34,6 +34,12 @@ conditions, medications, and labs. Set `SEED_DEMO=false` in
 [`docker-compose.yml`](docker-compose.yml) for an empty database. Stop with
 `Ctrl-C`; wipe data with `docker compose down -v`.
 
+> **New to this / on Windows?** Follow the step-by-step, no-experience-needed
+> guide: **[`docs/LOCAL_SETUP_WINDOWS.md`](docs/LOCAL_SETUP_WINDOWS.md)**. Open
+> **`http://localhost:3000`** (use `http://`, not `https://`). If the page says
+> "can't be reached", the app is usually still building — wait for the terminal
+> to print **`✓ Ready`**, then refresh.
+
 ## Deploy to a public URL
 
 A [`render.yaml`](../render.yaml) Blueprint is included. On
