@@ -1,224 +1,130 @@
-# Diabetes Quest 🩺
+# HealthPassport Pro
 
-[![CI](https://github.com/ahmaddastjerdi-design/Diabetes-application-/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmaddastjerdi-design/Diabetes-application-/actions/workflows/ci.yml)
+> A production-grade, full-stack **Progressive Web App** for personal health
+> records and interactive chronic-disease care.
 
-A React Native (Expo) **Android** app that teaches patients — through gamified,
-hands-on play — how their everyday choices around **diet, exercise, and
-medication** ripple through their body and affect organs like the **heart** and
-**kidneys**.
+HealthPassport Pro helps patients track chronic diseases, store medical records,
+understand their trends, receive safe educational guidance, recognize red-flag
+symptoms, and generate physician-ready reports — built with the seriousness of a
+real medical product.
 
-> ⚕️ **Educational only — not medical advice or a medical device.** The
-> physiological model is an intentionally simplified teaching simulation. All
-> content must be reviewed by a clinician before any real-world release.
-
-> 🩺 **Also in this repo: [HealthPassport Pro](./healthpassport/)** — a
-> production-grade, offline-first **PWA** for personal health records and
-> chronic-disease care (encrypted on-device storage, FHIR R4 export, a
-> clinical-safety engine, and physician-ready reports). It is a separate,
-> self-contained product under [`healthpassport/`](./healthpassport/) and does
-> not affect this Expo app.
+> **Global safety disclaimer.** HealthPassport Pro is a personal health record and
+> educational chronic care guide. It does not diagnose, prescribe, or replace your
+> physician. For urgent symptoms such as chest pain, severe shortness of breath,
+> fainting, stroke-like symptoms, or severe weakness, seek emergency medical care.
 
 ---
 
-## The idea
+## Run the complete app in one command
 
-Most diabetes apps are trackers that bolt points onto logging. The differentiator
-here is a **cause-and-effect organ simulation**: when the patient logs a sugary
-drink, a walk, or a missed dose, they immediately *see* their glucose / blood
-pressure / hydration / cholesterol move, and over days they watch their heart and
-kidneys visibly heal or strain. The goal is an embodied, intuitive understanding
-of "why my choices matter."
-
-See [`DESIGN.md`](./DESIGN.md) for the research behind it and the full design.
-
-## Core loop (MDA framework)
-
-- **Mechanic** — log a daily action (diet / exercise / drug).
-- **Dynamic** — actions move physiological markers; markers in/out of their
-  healthy band slowly heal or damage organs over simulated days.
-- **Aesthetic** — the patient sees their organs respond and understands the link.
-
-Wrapped in a **Self-Determination-Theory** motivation layer (XP, levels, badges,
-and a *forgiving* streak — see `DESIGN.md` for why punishing streaks backfire).
-
-## App structure
-
-A one-time **onboarding flow** personalizes the experience (name, condition,
-medications, daily step goal) and offers to connect **Android Health Connect** so
-real steps feed the simulation.
-
-| Tab | Screen | Purpose |
-|-----|--------|---------|
-| 🩺 Home | `HomeScreen` | Personalized greeting, real step activity, organ health, live markers |
-| ➕ Log | `LogScreen` | The core mechanic — log a choice (meds tailored to you), see the ripple |
-| 📚 Learn | `LearnScreen` | Bite-size lesson quests + a check-question |
-| 🏅 Profile | `ProfileScreen` | Edit personalization, badges, level summary, reset |
-
-## Code map
-
-```
-App.tsx                     Navigation root + onboarding gate + providers
-src/
-  engine/
-    physiology.ts           Organ-impact simulation (markers → organs)
-    gamification.ts         XP, levels, badges, forgiving streak (SDT-based)
-    achievements.ts         Tiered (bronze/silver/gold) achievements
-    gameLogic.ts            Pure game-loop reducers (logAction/completeLesson)
-    __smoke__.ts            Runtime sanity checks for the engine
-  data/
-    actions.ts              Loggable diet/exercise/drug actions (+ steps→action)
-    lessons.ts              Education quests + quizzes
-    profile.ts              Onboarding options (conditions, meds, step goals)
-  services/
-    healthConnect.ts        Lazy, guarded Android Health Connect wrapper
-    useHealthConnect.ts     Hook: status, permission, today's steps
-    haptics.ts              Guarded expo-haptics wrapper
-    notifications.ts        Guarded local medication reminders
-  state/
-    GameContext.tsx         Single source of truth, persisted via AsyncStorage
-  components/
-    anim.tsx                CountUp, AnimatedBar, FadeIn, Pop primitives
-    RewardLayer.tsx         App-wide XP toast + badge/level-up celebration
-    BodyDiagram.tsx         SVG body whose organs tint by health + heartbeat
-    CausalChain.tsx         Animated choice → markers → organs flow
-    Sparkline.tsx           SVG organ-health trend line
-    OrganDetailSheet.tsx    Tap an organ → trend, what's affecting it, tips
-    GoalsCard.tsx           Today's daily goals (the daily hook)
-    A1cCard.tsx             Estimated long-term HbA1c from glucose history
-    WeeklySummaryCard.tsx   Last-7-days recap (organ change, A1c trend, streak)
-    RemindersCard.tsx       Daily medication-reminder settings
-    TutorialOverlay.tsx     One-time "how it works" walkthrough
-    OrganCard, MarkerRow, ActivityCard, ui.tsx (UI primitives)
-  screens/                  Onboarding, Home, Log, Learn, Profile
-  theme.ts                  Design tokens
-```
-
-### Experience / "game feel"
-
-The app leans on tactile + motion feedback to feel responsive and rewarding:
-
-- **Living body diagram** (`react-native-svg`) — the dashboard centerpiece: a
-  body silhouette whose heart and kidneys tint by their current health, with a
-  gentle pulsing heartbeat. The organ-impact concept made visual.
-- **Animated causal chain** — after you log a choice, a `choice → markers →
-  organs` flow fades in link by link, teaching the mechanism, not just the score.
-- **Organ detail sheet** — tap any organ (or the body legend) for a bottom sheet
-  with a health-trend sparkline, what's affecting it right now, and concrete tips
-  for whatever is out of range.
-- **Guided first session** — a one-time, skippable walkthrough frames the core
-  loop for new patients (replayable from the Profile tab).
-- **Daily goals & weekly recap** — three resettable daily goals give a once-a-day
-  hook; a "last 7 days" card recaps organ change, A1c trend, and streak.
-- **Tiered achievements** — bronze/silver/gold progression across streak,
-  lessons, days played, and organ health, with progress toward the next tier and
-  a celebration when one is reached.
-- **Medication reminders** (`expo-notifications`) — opt-in daily local reminder
-  that names the patient's meds, and **tapping it deep-links straight to the Log
-  screen** (one tap from reminder to action). Local-only; scheduling is most
-  reliable on an Android development build (guarded, degrades gracefully).
-- **Accessibility** — screen-reader labels on the emoji-only action tiles, the
-  SVG body diagram (read as "Heart 82 of 100, Thriving…"), organ cards, and
-  buttons; plus reduce-motion support throughout.
-- **Haptics** (`expo-haptics`) on every meaningful interaction — light taps for
-  logging, success/warning buzzes that mirror whether a choice helped or hurt.
-- **Animated everything** (RN `Animated`, no native config): counting numbers,
-  filling bars, staggered card entrances, and a press "pop".
-- **Reward moments** — a sliding **+XP toast** plus a queued **celebration
-  overlay** (with an emoji burst) for badge unlocks and level-ups, fired from one
-  central `RewardProvider` so every screen stays simple.
-- **Polish** — a gradient dashboard hero, safe-area handling on every screen, a
-  tab bar that respects the home indicator, and respect for the OS
-  "reduce motion" setting.
-
-### Health Connect (real step data)
-
-Reading steps uses [`react-native-health-connect`](https://github.com/matinzd/react-native-health-connect)
-and is **Android-only, requiring a development build** (it does not work in Expo
-Go or on web). The app degrades gracefully when it's unavailable. To try it:
+With Docker installed, from this directory:
 
 ```bash
-npx expo run:android        # builds a dev client with the native module
+docker compose up --build
 ```
 
-You also need the Health Connect app installed on the device (Android 14+ has it
-built in; older versions install it from the Play Store).
+This builds the app, starts PostgreSQL, applies migrations, and seeds a
+**synthetic demo patient**. Then open **http://localhost:3000** and sign in:
 
-## Getting started
+- **Email:** `demo@healthpassport.local`
+- **Password:** `Demo!12345`
+
+The demo dashboard already shows a red-flag blood-pressure reading, trends,
+conditions, medications, and labs. Set `SEED_DEMO=false` in
+[`docker-compose.yml`](docker-compose.yml) for an empty database. Stop with
+`Ctrl-C`; wipe data with `docker compose down -v`.
+
+> **New to this / on Windows?** Follow the step-by-step, no-experience-needed
+> guide: **[`docs/LOCAL_SETUP_WINDOWS.md`](docs/LOCAL_SETUP_WINDOWS.md)**. Open
+> **`http://localhost:3000`** (use `http://`, not `https://`). If the page says
+> "can't be reached", the app is usually still building — wait for the terminal
+> to print **`✓ Ready`**, then refresh.
+
+## Deploy to a public URL
+
+A [`render.yaml`](../render.yaml) Blueprint is included. On
+[render.com](https://render.com) → **New → Blueprint** → pick this repo: Render
+provisions a PostgreSQL database and the web service, builds the Docker image,
+runs migrations, seeds the demo patient, and returns a public `https` URL. Sign
+in with the demo credentials above. (Full staging/production runbook:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).)
+
+## Run locally without Docker
+
+Requires Node 20 and a PostgreSQL database.
 
 ```bash
+cp .env.example .env          # then fill in DATABASE_URL, DIRECT_URL, AUTH_SECRET
 npm install
-npm run typecheck     # tsc --noEmit
-npm test              # Jest unit tests (engine + data logic)
-npm run smoke         # quick scripted simulation sanity check
+npm run db:migrate            # apply migrations
+node prisma/demo-seed.mjs     # optional: seed the demo patient
+npm run dev                   # http://localhost:3000
 ```
 
-## Run on your Android phone
+Generate a secret with `openssl rand -base64 32`.
 
-Pick a path. You run these on a computer (after `git clone` + `npm install`);
-the app ends up on your phone.
+## Scripts
 
-### A) Quick look — Expo Go (no build, ~2 min)
+| Command | What it does |
+|---------|--------------|
+| `npm run dev` | Start the dev server |
+| `npm run build` / `npm run start` | Production build / serve |
+| `npm run typecheck` · `npm run lint` | Types and linting |
+| `npm test` | Unit tests (Vitest) |
+| `npm run e2e` | End-to-end + accessibility (Playwright + axe) |
+| `npm run db:migrate` / `db:deploy` | Prisma migrations (dev / prod) |
 
-Most of the app, minus Health Connect step sync and reliable reminder scheduling.
+## What's included (V1 — patient)
 
-1. Install **Expo Go** from the Play Store on your phone.
-2. On your computer: `npx expo start`
-3. Scan the QR code with Expo Go (phone and computer on the **same Wi-Fi**).
+Registration & login · onboarding · profile · conditions · medications ·
+allergies · vitals · labs · symptoms · daily check-in · documents (secure
+upload) · encounters · chronic-care guides · physician-ready report (print +
+FHIR export) · settings · privacy & security (consent, data export, account
+deletion) · installable PWA with an offline health summary.
 
-### B) Full app — installable APK via EAS Build (cloud, no Android Studio)
+**Chronic-care focus:** hypertension, type 2 diabetes, CKD risk, dyslipidemia /
+cardiovascular risk, obesity / metabolic syndrome, medication adherence, and
+preventive-care reminders.
 
-Includes Health Connect + working notifications. Builds in the cloud, so you
-don't need the Android SDK locally.
+## Technology
 
-```bash
-npm install -g eas-cli
-eas login                              # free Expo account
-eas build -p android --profile preview # builds an APK in the cloud
-```
+Next.js (App Router) · TypeScript (strict) · Tailwind CSS · React Hook Form ·
+Zod · Recharts · Lucide · PostgreSQL · Prisma · Auth.js / NextAuth ·
+S3-compatible object storage · PWA (manifest + service worker) · Vitest ·
+Playwright + axe · ESLint · Prettier · GitHub Actions CI.
 
-When it finishes, open the build URL (or the emailed link) on your phone and
-install the APK (you'll need to allow "install from unknown sources"). Then
-install **Health Connect** from the Play Store if you want step sync.
+## Safety, security & accessibility
 
-### C) Full app — local build (needs Android Studio + USB device/emulator)
+- **Clinical safety:** a cited red-flag engine (EMERGENCY / URGENT / ROUTINE)
+  that never diagnoses, prescribes, or changes medication — it tracks, educates,
+  shows trends, and tells you when to seek care. See
+  [`docs/MEDICAL_SAFETY_RULES.md`](docs/MEDICAL_SAFETY_RULES.md).
+- **Security:** ownership-scoped data access (no IDOR), server-side
+  authorization, Zod validation, magic-byte file validation, audit logging,
+  CSP + security headers, env validation at boot. See
+  [`docs/SECURITY_CHECKLIST.md`](docs/SECURITY_CHECKLIST.md).
+- **Accessibility:** WCAG 2.2 AA; status is never conveyed by colour alone. See
+  [`docs/ACCESSIBILITY_CHECKLIST.md`](docs/ACCESSIBILITY_CHECKLIST.md).
 
-```bash
-npx expo run:android
-```
+## Documentation index
 
-> Health Connect step sync and reliable medication-reminder scheduling require
-> path **B** or **C** (a dev/standalone build) — they don't work in Expo Go.
-> Everything else works in all three.
+| Document | Purpose |
+|----------|---------|
+| [`docs/PRD.md`](docs/PRD.md) | Product requirements — users, modules, scope, safety |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture and folder structure |
+| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Prisma/PostgreSQL data model (18 tables) |
+| [`docs/MEDICAL_SAFETY_RULES.md`](docs/MEDICAL_SAFETY_RULES.md) | Safety boundaries, red-flag rules, disclaimers |
+| [`docs/CLINICAL_REFERENCE.md`](docs/CLINICAL_REFERENCE.md) | Cited clinical thresholds (ACC/AHA, ADA, KDIGO, WHO, NEWS2) |
+| [`docs/SECURITY_CHECKLIST.md`](docs/SECURITY_CHECKLIST.md) | OWASP ASVS-inspired controls checklist |
+| [`docs/PRIVACY_MODEL.md`](docs/PRIVACY_MODEL.md) | Consent, data rights, retention, minimization |
+| [`docs/ACCESSIBILITY_CHECKLIST.md`](docs/ACCESSIBILITY_CHECKLIST.md) | WCAG 2.2 AA checklist |
+| [`docs/SCALABILITY_PLAN.md`](docs/SCALABILITY_PLAN.md) | Scaling to 1M patients / 100k physicians |
+| [`docs/FHIR_MAPPING.md`](docs/FHIR_MAPPING.md) | FHIR-inspired models + mapping functions |
+| [`docs/QA_TEST_PLAN.md`](docs/QA_TEST_PLAN.md) | Test strategy, matrix, and CI gates |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Staging/production deployment runbook |
 
-### Tests
+## Roadmap
 
-Pure logic — the simulation engine, gamification, achievements, daily goals, and
-profile helpers — is covered by [Jest](https://jestjs.io/) (`jest-expo` preset).
-72 tests across 7 suites assert the things that actually matter for correctness:
-organ heal/harm direction, marker clamping, the forgiving streak, badge/tier
-reconciliation (including "never downgrade an earned tier"), goal reset on a new
-day, and the estimated-A1c formula. Run `npm test` (or `npm test -- --watch`).
-
-### Device QA
-
-`tsc`, Jest, and the bundle can't verify animations, SVG layout, touch behavior,
-haptics, or native permission flows — a real device can. [`docs/DEVICE_QA.md`](./docs/DEVICE_QA.md)
-is a systematic per-screen checklist (with a regression-hotspots section and a
-report template) for an `npx expo run:android` pass.
-
-### Continuous integration
-
-`.github/workflows/ci.yml` runs on every push and pull request: `npm ci`,
-`npm run typecheck`, `npm test`, and a Metro Android bundle (`expo export`) — the
-same checks validated locally, so a green badge means all three pass.
-
-You need [Expo](https://docs.expo.dev/) tooling and an Android emulator or the
-Expo Go app on a physical device. Tech: Expo SDK 56, React Native 0.85, React 19,
-React Navigation 7, TypeScript.
-
-## Status
-
-This is a **working vertical-slice prototype**: the simulation, gamification,
-lessons, and persistence all function end-to-end. It is a foundation to validate
-the concept, not a finished product. See [`DESIGN.md`](./DESIGN.md#roadmap) for
-the roadmap (clinician review, Health Connect integration, real data sync, etc.).
+V1 serves **patients only**. Future: family-caregiver access, physician
+dashboard, clinic admin, care coordinator, FHIR/EHR integration, and
+decision-support — scaling toward 1,000,000 patients / 100,000 physicians.

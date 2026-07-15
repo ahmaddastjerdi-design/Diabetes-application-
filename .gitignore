@@ -1,44 +1,40 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Dependencies
+/node_modules
 
-# dependencies
-node_modules/
+# Next.js
+/.next/
+/out/
+next-env.d.ts
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# Production
+/build
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Prisma (generated client is committed via node_modules; keep local artifacts out)
+# (migrations ARE committed; see prisma/migrations)
 
-# Metro
-.metro-health-check*
+# Local document storage (never commit uploaded files)
+/.uploads
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
+# Env / secrets — never commit real values
+.env
 .env*.local
+.env.production
 
-# typescript
+# Test / coverage
+/coverage
+.vitest/
+/playwright-report
+/test-results
+/.playwright
+/screenshots
+
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
-
-# web export
-dist-web/
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*

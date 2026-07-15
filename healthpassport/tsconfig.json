@@ -1,5 +1,0 @@
-{
-  "// note": "Standalone base for the HealthPassport Pro monorepo. It intentionally does NOT extend the sibling Expo project's tsconfig at the repository root; it exists so tooling that searches upward for a tsconfig stops here.",
-  "files": [],
-  "references": [{ "path": "apps/web" }]
-}

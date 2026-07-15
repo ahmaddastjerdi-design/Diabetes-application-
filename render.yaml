@@ -25,7 +25,7 @@ services:
     name: healthpassport-pro
     runtime: docker
     plan: free
-    rootDir: healthpassport-pro
+    rootDir: .
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /login
